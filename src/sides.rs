@@ -61,7 +61,7 @@ pub struct Sides {
 }
 
 impl Sides {
-    pub const MAX_VALUE: u8 = 0x20;
+    const MAX_VALUE: u8 = 0x20;
 
     pub fn contains(self, side: Side) -> bool {
         let sides: Sides = side.into();
@@ -189,9 +189,7 @@ pub struct SidesIterator {
 }
 
 impl SidesIterator {
-    pub fn new(sides: Sides) -> Self {
-        SidesIterator { sides, bit: 1 }
-    }
+    pub fn new(sides: Sides) -> Self { SidesIterator { sides, bit: 1 } }
 }
 
 impl Iterator for SidesIterator {
@@ -202,7 +200,9 @@ impl Iterator for SidesIterator {
             let side: Side = self.bit.try_into().unwrap();
             self.bit <<= 1;
 
-            if self.sides.contains(side) { return Some(side); }
+            if self.sides.contains(side) {
+                return Some(side);
+            }
         }
 
         None
