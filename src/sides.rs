@@ -79,14 +79,11 @@ impl std::fmt::Debug for Sides {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_char('[')?;
 
-        for side in self.into_iter() {
-            if self.contains(side) {
-                f.write_char(side.into())?
-            }
+        for s in self.into_iter() {
+            if self.contains(s) { f.write_char(s.into())? }
         }
 
         f.write_char(']')?;
-
         Ok(())
     }
 }
@@ -136,9 +133,7 @@ impl std::ops::BitOr<Side> for Sides {
 impl std::ops::BitOr<Sides> for Sides {
     type Output = Sides;
 
-    fn bitor(self, rhs: Sides) -> Self::Output {
-        Sides { bits: self.bits | rhs.bits }
-    }
+    fn bitor(self, rhs: Sides) -> Self::Output { Sides { bits: self.bits | rhs.bits } }
 }
 
 impl std::ops::BitAnd<Side> for Side {
@@ -163,9 +158,7 @@ impl std::ops::BitAnd<Side> for Sides {
 impl std::ops::BitAnd<Sides> for Sides {
     type Output = Sides;
 
-    fn bitand(self, rhs: Sides) -> Self::Output {
-        Sides { bits: self.bits & rhs.bits }
-    }
+    fn bitand(self, rhs: Sides) -> Self::Output { Sides { bits: self.bits & rhs.bits } }
 }
 
 impl std::ops::Not for Side {
