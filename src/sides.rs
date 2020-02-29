@@ -42,9 +42,25 @@ impl std::convert::TryFrom<u8> for Side {
     }
 }
 
-impl Into<char> for Side {
-    fn into(self) -> char {
-        match self {
+impl std::convert::TryFrom<char> for Side {
+    type Error = ();
+
+    fn try_from(c: char) -> Result<Self, Self::Error> {
+        match c {
+            'f' => Ok(Front),
+            'b' => Ok(Back),
+            'u' => Ok(Up),
+            'd' => Ok(Down),
+            'l' => Ok(Left),
+            'r' => Ok(Right),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<Side> for char {
+    fn from(s: Side) -> Self {
+        match s {
             Front => 'f',
             Back => 'b',
             Up => 'u',
@@ -67,6 +83,10 @@ impl Sides {
         let sides: Sides = side.into();
         self.bits & sides.bits != 0
     }
+
+    pub fn empty() -> Self { Sides { bits: 0 } }
+
+    pub fn all() -> Self { Sides { bits: !0 } }
 }
 
 impl PartialEq for Sides {
@@ -176,6 +196,29 @@ impl std::ops::Not for Sides {
     fn not(self) -> Self::Output { Sides { bits: !self.bits } }
 }
 
+impl std::ops::Sub<Side> for Sides {
+    type Output = Sides;
+
+    fn sub(self, rhs: Side) -> Self::Output {
+        let r: Sides = rhs.into();
+        Sides { bits: self.bits & !r.bits }
+    }
+}
+
+impl std::ops::SubAssign<Side> for Sides {
+    fn sub_assign(&mut self, rhs: Side) { *self = *self - rhs }
+}
+
+impl std::ops::Sub<Sides> for Sides {
+    type Output = Sides;
+
+    fn sub(self, rhs: Sides) -> Self::Output { Sides { bits: self.bits & !rhs.bits } }
+}
+
+impl std::ops::SubAssign<Sides> for Sides {
+    fn sub_assign(&mut self, rhs: Sides) { *self = *self - rhs }
+}
+
 pub struct SidesIterator {
     sides: Sides,
     bit: u8,
@@ -221,7 +264,7 @@ mod tests {
         let ful: Sides = 0b010101.into();
         assert_eq!(format!("{:?}", ful), "[ful]");
 
-        let empty: Sides = 0.into();
+        let empty = Sides::empty();
         assert_eq!(format!("{:?}", empty), "[]");
     }
 
@@ -234,6 +277,13 @@ mod tests {
         assert!(bdr.contains(Down));
         assert!(!bdr.contains(Left));
         assert!(bdr.contains(Right));
+
+        let empty = Sides::empty();
+        assert!(
+            Sides::all()
+                .into_iter()
+                .all(|s| !empty.contains(s))
+        );
     }
 
     #[test]
@@ -241,9 +291,10 @@ mod tests {
         let fb = Front | Back;
         let bu = Back | Up;
         let fbu = fb | bu;
-        assert!(fbu
-            .into_iter()
-            .all(|s| s == Front || s == Back || s == Up)
+        assert!(
+            fbu
+                .into_iter()
+                .all(|s| s == Front || s == Back || s == Up)
         );
 
         let lrd = Left | Right | Down;
@@ -254,5 +305,28 @@ mod tests {
         let udr = Up | Down | Right;
         assert_eq!(!udr, Front | Back | Left);
         assert_eq!(!Up, Front | Back | Left | Right | Down);
+    }
+
+    #[test]
+    fn sub() {
+        let mut all = Sides::all();
+        all = all - Right;
+        all -= Left;
+        all -= Up;
+
+        assert_eq!(all, Down | Front | Back);
+
+        let mut empty = Sides::empty();
+        empty = empty - Up;
+        empty -= Right;
+
+        assert_eq!(empty, Sides::empty());
+
+        assert_eq!(Sides::all() - Sides::empty(), Sides::all());
+        assert_eq!(Sides::empty() - Sides::all(), Sides::empty());
+
+        let ud = Up | Down;
+        let lrfb = Sides::all() - ud;
+        assert_eq!(lrfb, Left | Right | Front | Back);
     }
 }
