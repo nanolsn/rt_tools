@@ -46,12 +46,12 @@ impl std::convert::TryFrom<char> for Side {
 
     fn try_from(c: char) -> Result<Self, Self::Error> {
         match c {
-            'f' => Ok(Front),
-            'b' => Ok(Back),
-            'u' => Ok(Up),
-            'd' => Ok(Down),
-            'l' => Ok(Left),
-            'r' => Ok(Right),
+            'f' | 'F' => Ok(Front),
+            'b' | 'B' => Ok(Back),
+            'u' | 'U' => Ok(Up),
+            'd' | 'D' => Ok(Down),
+            'l' | 'L' => Ok(Left),
+            'r' | 'R' => Ok(Right),
             _ => Err(()),
         }
     }
@@ -255,6 +255,14 @@ impl IntoIterator for Sides {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn try_from() {
+        use std::convert::TryFrom;
+
+        assert_eq!(Side::try_from('L').unwrap(), Left);
+        assert_eq!(Side::try_from('l').unwrap(), Left);
+    }
 
     #[test]
     fn debug() {
