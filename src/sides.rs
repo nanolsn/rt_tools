@@ -1,4 +1,3 @@
-use std::fmt::{Formatter, Write};
 use std::convert::TryInto;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -96,15 +95,16 @@ impl PartialEq for Sides {
 impl Eq for Sides {}
 
 impl std::fmt::Debug for Sides {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use std::fmt::Write;
+
         f.write_char('[')?;
 
         for s in self.into_iter() {
             if self.contains(s) { f.write_char(s.into())? }
         }
 
-        f.write_char(']')?;
-        Ok(())
+        f.write_char(']')
     }
 }
 
