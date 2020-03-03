@@ -1,3 +1,8 @@
+use glm::{
+    vec3,
+    Vec3,
+};
+
 use super::{
     sides::*,
     axis::Axis,
@@ -18,6 +23,32 @@ pub trait ShellTransform
             self.turn_counter_clockwise(axis)
         } else {
             self.turn_clockwise(axis)
+        }
+    }
+}
+
+impl ShellTransform for Vec3 {
+    fn flip(self, axis: Axis) -> Self {
+        match axis {
+            Axis::X => vec3(-self.x, self.y, self.z),
+            Axis::Y => vec3(self.x, -self.y, self.z),
+            Axis::Z => vec3(self.x, self.y, -self.z),
+        }
+    }
+
+    fn turn_counter_clockwise(self, axis: Axis) -> Self {
+        match axis {
+            Axis::X => vec3(self.x, -self.z, self.y),
+            Axis::Y => vec3(self.z, self.y, -self.x),
+            Axis::Z => vec3(-self.y, self.x, self.z),
+        }
+    }
+
+    fn turn_clockwise(self, axis: Axis) -> Self {
+        match axis {
+            Axis::X => vec3(self.x, self.z, -self.y),
+            Axis::Y => vec3(-self.z, self.y, self.x),
+            Axis::Z => vec3(self.y, -self.x, self.z),
         }
     }
 }
@@ -104,7 +135,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flip() {
+    fn flip_vec3() {
+        let v = vec3(0., 1., -1.);
+        assert_eq!(v.flip(Axis::Y), vec3(0., -1., -1.));
+    }
+
+    #[test]
+    fn turn_vec3() {
+        let v = vec3(0., 1., -1.);
+        assert_eq!(v.turn(Axis::Y, true), vec3(-1., 1., 0.));
+    }
+
+    #[test]
+    fn flip_shell() {
         let s = Shell::new()
             .flip(Axis::X)
             .flip(Axis::X)
@@ -142,7 +185,7 @@ mod tests {
     }
 
     #[test]
-    fn turn() {
+    fn turn_shell() {
         let s = Shell::new()
             .turn_counter_clockwise(Axis::X)
             .turn_clockwise(Axis::X);
