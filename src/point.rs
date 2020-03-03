@@ -88,8 +88,8 @@ impl From<Side> for Point {
 impl std::ops::Add for Point {
     type Output = Self;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        Point(self.0 + rhs.0, self.1 + rhs.1, self.2 + rhs.2)
+    fn add(self, Point(x, y, z): Self) -> Self::Output {
+        Point(self.0 + x, self.1 + y, self.2 + z)
     }
 }
 
@@ -100,8 +100,8 @@ impl std::ops::AddAssign for Point {
 impl std::ops::Sub for Point {
     type Output = Self;
 
-    fn sub(self, rhs: Self) -> Self::Output {
-        Point(self.0 - rhs.0, self.1 - rhs.1, self.2 - rhs.2)
+    fn sub(self, Point(x, y, z): Self) -> Self::Output {
+        Point(self.0 - x, self.1 - y, self.2 - z)
     }
 }
 
@@ -124,7 +124,8 @@ mod tests {
 
     #[test]
     fn modulo() {
-        assert_eq!(Point(12, 5, -1).modulo(5), Point(2, 0, 4));
+        let p = Point(12, 5, -1);
+        assert_eq!(p.modulo(5), Point(2, 0, 4));
     }
 
     #[test]
