@@ -147,5 +147,12 @@ mod tests {
         assert_eq!(s.down, Right);
         assert_eq!(s.left, Front);
         assert_eq!(s.right, Back);
+
+        let s = Shell::new()
+            .turn_counter_clockwise(Axis::Z)
+            .turn_counter_clockwise(Axis::Z)
+            .turn_counter_clockwise(Axis::Z);
+
+        assert_eq!(s, Shell::new().turn_clockwise(Axis::Z));
     }
 }
