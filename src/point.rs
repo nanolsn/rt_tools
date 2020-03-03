@@ -26,27 +26,17 @@ impl Point {
     pub fn zero() -> Self { Point(0, 0, 0) }
 
     pub fn front() -> Self { Point(0, 0, 1) }
-
     pub fn back() -> Self { Point(0, 0, -1) }
-
     pub fn up() -> Self { Point(0, 1, 0) }
-
     pub fn down() -> Self { Point(0, -1, 0) }
-
     pub fn left() -> Self { Point(1, 0, 0) }
-
     pub fn right() -> Self { Point(-1, 0, 0) }
 
     pub fn to_front(self) -> Self { self + Self::front() }
-
     pub fn to_back(self) -> Self { self + Self::back() }
-
     pub fn to_up(self) -> Self { self + Self::up() }
-
     pub fn to_down(self) -> Self { self + Self::down() }
-
     pub fn to_left(self) -> Self { self + Self::left() }
-
     pub fn to_right(self) -> Self { self + Self::right() }
 
     pub fn to(self, side: Side) -> Self { self + side.into() }
@@ -96,9 +86,7 @@ impl From<Side> for Point {
 impl std::ops::Add for Point {
     type Output = Self;
 
-    fn add(self, Point(x, y, z): Self) -> Self::Output {
-        Point(self.0 + x, self.1 + y, self.2 + z)
-    }
+    fn add(self, Point(x, y, z): Self) -> Self { Point(self.0 + x, self.1 + y, self.2 + z) }
 }
 
 impl std::ops::AddAssign for Point {
@@ -108,9 +96,7 @@ impl std::ops::AddAssign for Point {
 impl std::ops::Sub for Point {
     type Output = Self;
 
-    fn sub(self, Point(x, y, z): Self) -> Self::Output {
-        Point(self.0 - x, self.1 - y, self.2 - z)
-    }
+    fn sub(self, Point(x, y, z): Self) -> Self { Point(self.0 - x, self.1 - y, self.2 - z) }
 }
 
 impl std::ops::SubAssign for Point {
