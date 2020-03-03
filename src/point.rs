@@ -62,14 +62,22 @@ impl std::fmt::Display for Point {
     }
 }
 
-impl From<(f32, f32, f32)> for Point {
-    fn from((x, y, z): (f32, f32, f32)) -> Self {
+impl From<[f32; 3]> for Point {
+    fn from([x, y, z]: [f32; 3]) -> Self {
         Point(
             if x < 0. { x - 1. } else { x } as i32,
             if y < 0. { y - 1. } else { y } as i32,
             if z < 0. { z - 1. } else { z } as i32,
         )
     }
+}
+
+impl From<(f32, f32, f32)> for Point {
+    fn from((x, y, z): (f32, f32, f32)) -> Self { Point::from([x, y, z]) }
+}
+
+impl From<glm::Vec3> for Point {
+    fn from(vec: glm::Vec3) -> Self { Point::from([vec.x, vec.y, vec.z]) }
 }
 
 impl From<Side> for Point {

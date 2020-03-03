@@ -3,6 +3,25 @@ use super::{
     axis::Axis,
 };
 
+pub trait ShellTransform
+    where
+        Self: Sized,
+{
+    fn flip(self, axis: Axis) -> Self;
+
+    fn turn_counter_clockwise(self, axis: Axis) -> Self;
+
+    fn turn_clockwise(self, axis: Axis) -> Self;
+
+    fn turn(self, axis: Axis, counter_clockwise: bool) -> Self {
+        if counter_clockwise {
+            self.turn_counter_clockwise(axis)
+        } else {
+            self.turn_clockwise(axis)
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Shell {
     front: Side,
@@ -16,7 +35,27 @@ pub struct Shell {
 impl Shell {
     pub fn new() -> Self { Default::default() }
 
-    pub fn flip(self, axis: Axis) -> Self {
+    pub fn local_front(&self) -> Side { self.front }
+    pub fn local_back(&self) -> Side { self.back }
+    pub fn local_up(&self) -> Side { self.up }
+    pub fn local_down(&self) -> Side { self.down }
+    pub fn local_left(&self) -> Side { self.left }
+    pub fn local_right(&self) -> Side { self.right }
+
+    pub fn local_side(&self, side: Side) -> Side {
+        match side {
+            Front => self.front,
+            Back => self.back,
+            Up => self.up,
+            Down => self.down,
+            Left => self.left,
+            Right => self.right,
+        }
+    }
+}
+
+impl ShellTransform for Shell {
+    fn flip(self, axis: Axis) -> Self {
         let Shell { front, back, up, down, left, right } = self;
 
         match axis {
@@ -26,7 +65,7 @@ impl Shell {
         }
     }
 
-    pub fn turn_counter_clockwise(self, axis: Axis) -> Self {
+    fn turn_counter_clockwise(self, axis: Axis) -> Self {
         let Shell { front, back, up, down, left, right } = self;
 
         match axis {
@@ -36,21 +75,13 @@ impl Shell {
         }
     }
 
-    pub fn turn_clockwise(self, axis: Axis) -> Self {
+    fn turn_clockwise(self, axis: Axis) -> Self {
         let Shell { front, back, up, down, left, right } = self;
 
         match axis {
             Axis::X => Shell { front: down, down: back, back: up, up: front, ..self },
             Axis::Y => Shell { left: back, back: right, right: front, front: left, ..self },
             Axis::Z => Shell { right: down, down: left, left: up, up: right, ..self },
-        }
-    }
-
-    pub fn turn(self, axis: Axis, counter_clockwise: bool) -> Self {
-        if counter_clockwise {
-            self.turn_counter_clockwise(axis)
-        } else {
-            self.turn_clockwise(axis)
         }
     }
 }
