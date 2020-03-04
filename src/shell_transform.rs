@@ -8,17 +8,14 @@ use super::{
     axis::Axis,
 };
 
-pub trait ShellTransform
-    where
-        Self: Sized,
-{
-    fn flip(self, axis: Axis) -> Self;
+pub trait ShellTransform {
+    fn flip(&mut self, axis: Axis) -> &mut Self;
 
-    fn turn_counter_clockwise(self, axis: Axis) -> Self;
+    fn turn_counter_clockwise(&mut self, axis: Axis) -> &mut Self;
 
-    fn turn_clockwise(self, axis: Axis) -> Self;
+    fn turn_clockwise(&mut self, axis: Axis) -> &mut Self;
 
-    fn turn(self, axis: Axis, counter_clockwise: bool) -> Self {
+    fn turn(&mut self, axis: Axis, counter_clockwise: bool) -> &mut Self {
         if counter_clockwise {
             self.turn_counter_clockwise(axis)
         } else {
@@ -28,28 +25,34 @@ pub trait ShellTransform
 }
 
 impl ShellTransform for Vec3 {
-    fn flip(self, axis: Axis) -> Self {
-        match axis {
+    fn flip(&mut self, axis: Axis) -> &mut Self {
+        *self = match axis {
             Axis::X => vec3(-self.x, self.y, self.z),
             Axis::Y => vec3(self.x, -self.y, self.z),
             Axis::Z => vec3(self.x, self.y, -self.z),
-        }
+        };
+
+        self
     }
 
-    fn turn_counter_clockwise(self, axis: Axis) -> Self {
-        match axis {
+    fn turn_counter_clockwise(&mut self, axis: Axis) -> &mut Self {
+        *self = match axis {
             Axis::X => vec3(self.x, -self.z, self.y),
             Axis::Y => vec3(self.z, self.y, -self.x),
             Axis::Z => vec3(-self.y, self.x, self.z),
-        }
+        };
+
+        self
     }
 
-    fn turn_clockwise(self, axis: Axis) -> Self {
-        match axis {
+    fn turn_clockwise(&mut self, axis: Axis) -> &mut Self {
+        *self = match axis {
             Axis::X => vec3(self.x, self.z, -self.y),
             Axis::Y => vec3(-self.z, self.y, self.x),
             Axis::Z => vec3(self.y, -self.x, self.z),
-        }
+        };
+
+        self
     }
 }
 
@@ -86,34 +89,79 @@ impl Shell {
 }
 
 impl ShellTransform for Shell {
-    fn flip(self, axis: Axis) -> Self {
-        let Shell { front, back, up, down, left, right } = self;
+    fn flip(&mut self, axis: Axis) -> &mut Self {
+        let Shell { front, back, up, down, left, right } = *self;
 
         match axis {
-            Axis::X => Shell { right: left, left: right, ..self },
-            Axis::Y => Shell { up: down, down: up, ..self },
-            Axis::Z => Shell { back: front, front: back, ..self },
-        }
+            Axis::X => {
+                self.right = left;
+                self.left = right;
+            }
+            Axis::Y => {
+                self.up = down;
+                self.down = up;
+            }
+            Axis::Z => {
+                self.back = front;
+                self.front = back;
+            }
+        };
+
+        self
     }
 
-    fn turn_counter_clockwise(self, axis: Axis) -> Self {
-        let Shell { front, back, up, down, left, right } = self;
+    fn turn_counter_clockwise(&mut self, axis: Axis) -> &mut Self {
+        let Shell { front, back, up, down, left, right } = *self;
 
         match axis {
-            Axis::X => Shell { front: up, down: front, back: down, up: back, ..self },
-            Axis::Y => Shell { left: front, back: left, right: back, front: right, ..self },
-            Axis::Z => Shell { right: up, down: right, left: down, up: left, ..self },
+            Axis::X => {
+                self.front = up;
+                self.down = front;
+                self.back = down;
+                self.up = back;
+            }
+            Axis::Y => {
+                self.left = front;
+                self.back = left;
+                self.right = back;
+                self.front = right;
+            }
+            Axis::Z => {
+                self.right = up;
+                self.down = right;
+                self.left = down;
+                self.up = left;
+            }
         }
+
+        self
     }
 
-    fn turn_clockwise(self, axis: Axis) -> Self {
-        let Shell { front, back, up, down, left, right } = self;
+    fn turn_clockwise(&mut self, axis: Axis) -> &mut Self {
+        let Shell { front, back, up, down, left, right } = *self;
 
         match axis {
-            Axis::X => Shell { front: down, down: back, back: up, up: front, ..self },
-            Axis::Y => Shell { left: back, back: right, right: front, front: left, ..self },
-            Axis::Z => Shell { right: down, down: left, left: up, up: right, ..self },
+            Axis::X => {
+                self.front = down;
+                self.down = back;
+                self.back = up;
+                self.up = front;
+            }
+            Axis::Y => {
+                self.left = back;
+                self.back = right;
+                self.right = front;
+                self.front = left;
+            }
+            Axis::Z => {
+                self.right = down;
+                self.down = left;
+                self.left = up;
+                self.up = right;
+            }
         }
+
+        self
     }
 }
 
@@ -136,19 +184,22 @@ mod tests {
 
     #[test]
     fn flip_vec3() {
-        let v = vec3(0., 1., -1.);
-        assert_eq!(v.flip(Axis::Y), vec3(0., -1., -1.));
+        let mut v = vec3(0., 1., -1.);
+        v.flip(Axis::Y);
+        assert_eq!(v, vec3(0., -1., -1.));
     }
 
     #[test]
     fn turn_vec3() {
-        let v = vec3(0., 1., -1.);
-        assert_eq!(v.turn(Axis::Y, true), vec3(-1., 1., 0.));
+        let mut v = vec3(0., 1., -1.);
+        v.turn(Axis::Y, true);
+        assert_eq!(v, vec3(-1., 1., 0.));
     }
 
     #[test]
     fn flip_shell() {
-        let s = Shell::new()
+        let mut s = Shell::new();
+        s
             .flip(Axis::X)
             .flip(Axis::X)
             .flip(Axis::Y)
@@ -161,7 +212,8 @@ mod tests {
         assert_eq!(s.left, Left);
         assert_eq!(s.right, Right);
 
-        let s = Shell::new()
+        let mut s = Shell::new();
+        s
             .flip(Axis::X)
             .flip(Axis::Y)
             .flip(Axis::Z);
@@ -173,7 +225,8 @@ mod tests {
         assert_eq!(s.left, Right);
         assert_eq!(s.right, Left);
 
-        let s = Shell::new()
+        let mut s = Shell::new();
+        s
             .flip(Axis::X)
             .flip(Axis::Y)
             .flip(Axis::Z)
@@ -186,13 +239,15 @@ mod tests {
 
     #[test]
     fn turn_shell() {
-        let s = Shell::new()
+        let mut s = Shell::new();
+        s
             .turn_counter_clockwise(Axis::X)
             .turn_clockwise(Axis::X);
 
         assert_eq!(s, Shell::new());
 
-        let s = Shell::new()
+        let mut s = Shell::new();
+        s
             .turn_clockwise(Axis::X)
             .turn_clockwise(Axis::X)
             .turn_clockwise(Axis::X)
@@ -200,7 +255,8 @@ mod tests {
 
         assert_eq!(s, Shell::new());
 
-        let s = Shell::new()
+        let mut s = Shell::new();
+        s
             .turn_counter_clockwise(Axis::Y)
             .turn_counter_clockwise(Axis::X);
 
@@ -211,7 +267,8 @@ mod tests {
         assert_eq!(s.left, Front);
         assert_eq!(s.right, Back);
 
-        let s = Shell::new()
+        let mut s = Shell::new();
+        s
             .turn_counter_clockwise(Axis::X)
             .turn_counter_clockwise(Axis::Z);
 
@@ -222,11 +279,12 @@ mod tests {
         assert_eq!(s.left, Front);
         assert_eq!(s.right, Back);
 
-        let s = Shell::new()
+        let mut s = Shell::new();
+        s
             .turn_counter_clockwise(Axis::Z)
             .turn_counter_clockwise(Axis::Z)
             .turn_counter_clockwise(Axis::Z);
 
-        assert_eq!(s, Shell::new().turn_clockwise(Axis::Z));
+        assert_eq!(s, *Shell::new().turn_clockwise(Axis::Z));
     }
 }
