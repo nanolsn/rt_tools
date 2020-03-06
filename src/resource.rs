@@ -1,13 +1,14 @@
-use std::collections::HashMap;
-use std::path::Path;
-use std::collections::hash_map::Entry;
+use std::{
+    collections::{HashMap, hash_map::Entry},
+    path::Path,
+};
 
 pub trait Load {
     fn load<P>(file: P) -> Self
         where
             P: AsRef<Path>;
 
-    fn dir() -> &'static str;
+    const DIR: &'static str;
 }
 
 #[derive(Debug)]
@@ -20,20 +21,18 @@ impl<T> Resource<T>
     where
         T: Load,
 {
-    pub fn new() -> Self { Resource { items: Vec::new(), files: HashMap::new() } }
+    pub fn new() -> Self { Resource::default() }
 
     pub fn load<S>(&mut self, file: S) -> &T
         where
             S: Into<String>,
     {
         let file = file.into();
-        let path = Path::new(T::dir()).join(&*file);
+        let path = Path::new(T::DIR).join(&*file);
         let item = T::load(path);
 
         let id = match self.files.entry(file) {
-            Entry::Occupied(en) => {
-                *en.get()
-            }
+            Entry::Occupied(en) => *en.get(),
             Entry::Vacant(en) => {
                 let id = self.items.len();
                 self.items.push(item);
@@ -55,6 +54,27 @@ impl<T> Resource<T>
             .get(&file.into())
             .and_then(|&id| self.get(id))
     }
+
+    pub fn len(&self) -> usize { self.items.len() }
+
+    pub fn iter(&self) -> std::slice::Iter<T> { self.items.iter() }
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<T> { self.items.iter_mut() }
+}
+
+impl<T> Default for Resource<T> {
+    fn default() -> Self { Resource { items: Vec::new(), files: HashMap::new() } }
+}
+
+impl<T> AsRef<[T]> for Resource<T> {
+    fn as_ref(&self) -> &[T] { &*self.items }
+}
+
+impl<T> AsMut<[T]> for Resource<T> {
+    fn as_mut(&mut self) -> &mut [T] { &mut *self.items }
+}
+
+impl<T> Into<Vec<T>> for Resource<T> {
+    fn into(self) -> Vec<T> { self.items }
 }
 
 #[cfg(test)]
@@ -81,7 +101,7 @@ mod tests {
             }
         }
 
-        fn dir() -> &'static str { "tiles" }
+        const DIR: &'static str = "tiles";
     }
 
     #[test]
@@ -103,5 +123,14 @@ mod tests {
         assert_eq!(res.get_file("two.tl").unwrap().name, "two.tl");
         assert_eq!(res.get_file("three.tl").unwrap().name, "three.tl");
         assert!(res.get_file("four.tl").is_none());
+
+        assert_eq!(res.len(), 3);
+
+        let files = ["one.tl", "two.tl", "three.tl"];
+        assert!(
+            res
+                .iter()
+                .all(|t| files.contains(&t.name.as_str()))
+        );
     }
 }
