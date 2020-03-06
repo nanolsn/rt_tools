@@ -4,11 +4,11 @@ use std::{
 };
 
 pub trait Load {
+    const DIR: &'static str;
+
     fn load<P>(file: P) -> Self
         where
             P: AsRef<Path>;
-
-    const DIR: &'static str;
 }
 
 #[derive(Debug)]
@@ -27,13 +27,12 @@ impl<T> Resource<T>
         where
             S: Into<String>,
     {
-        let file = file.into();
-        let path = Path::new(T::DIR).join(&*file);
-        let item = T::load(path);
-
-        let id = match self.files.entry(file) {
+        let id = match self.files.entry(file.into()) {
             Entry::Occupied(en) => *en.get(),
             Entry::Vacant(en) => {
+                let path = Path::new(T::DIR).join(en.key());
+                let item = T::load(path);
+
                 let id = self.items.len();
                 self.items.push(item);
                 en.insert(id);
@@ -87,6 +86,8 @@ mod tests {
     }
 
     impl Load for Tile {
+        const DIR: &'static str = "tiles";
+
         fn load<P>(file: P) -> Self
             where
                 P: AsRef<Path>,
@@ -100,8 +101,6 @@ mod tests {
                     .into()
             }
         }
-
-        const DIR: &'static str = "tiles";
     }
 
     #[test]
