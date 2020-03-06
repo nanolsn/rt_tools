@@ -59,18 +59,18 @@ impl Atlas {
         let texture_size = sprites_side * size;
         let mut map = image::DynamicImage::new_rgba8(texture_size, texture_size);
 
-        let it =
-            self.images
-                .into_iter()
-                .map(|file| {
-                    let img = f(file.0)?;
+        let it = self
+            .images
+            .into_iter()
+            .map(|file| {
+                let img = f(file.0)?;
 
-                    if img.width() != size || img.height() != size {
-                        Err(AtlasError::IncorrectSpriteSize)
-                    } else {
-                        Ok(img)
-                    }
-                });
+                if img.width() != size || img.height() != size {
+                    Err(AtlasError::IncorrectSpriteSize)
+                } else {
+                    Ok(img)
+                }
+            });
 
         for (i, res) in it.enumerate() {
             let img = res?;
