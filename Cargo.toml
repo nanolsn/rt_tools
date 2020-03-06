@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 glm = { package = "nalgebra-glm", version = "0.6" }
+image = "0.23"

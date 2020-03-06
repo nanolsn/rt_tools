@@ -20,11 +20,11 @@ impl<T> Resource<T>
 {
     pub fn new() -> Self { Resource::default() }
 
-    pub fn load<S>(&mut self, file: S) -> &T
+    pub fn load<S>(&mut self, file: S) -> usize
         where
             S: Into<String>,
     {
-        let id = match self.files.entry(file.into()) {
+        match self.files.entry(file.into()) {
             Entry::Occupied(en) => *en.get(),
             Entry::Vacant(en) => {
                 let item = load_data(en.key());
@@ -34,9 +34,7 @@ impl<T> Resource<T>
                 en.insert(id);
                 id
             }
-        };
-
-        &self.items[id]
+        }
     }
 
     pub fn get<B>(&self, by: B) -> Option<&T>
@@ -53,6 +51,7 @@ impl<T> Resource<T>
 
     pub fn iter(&self) -> std::slice::Iter<T> { self.items.iter() }
     pub fn iter_mut(&mut self) -> std::slice::IterMut<T> { self.items.iter_mut() }
+    pub fn into_iter(self) -> std::vec::IntoIter<T> { self.items.into_iter() }
 }
 
 impl<T> Get<usize> for Resource<T> {
