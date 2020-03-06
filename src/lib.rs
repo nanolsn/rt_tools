@@ -3,6 +3,8 @@ mod point;
 mod shell_transform;
 mod axis;
 mod resource;
+mod get;
+mod load;
 
 pub use sides::*;
 pub use point::*;

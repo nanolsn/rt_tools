@@ -1,15 +1,12 @@
-use std::{
-    collections::{HashMap, hash_map::Entry},
-    path::Path,
+use std::collections::{
+    HashMap,
+    hash_map::Entry,
 };
 
-pub trait Load {
-    const DIR: &'static str;
-
-    fn load<P>(file: P) -> Self
-        where
-            P: AsRef<Path>;
-}
+use super::{
+    get::{Get, GetMut},
+    load::{Load, load_data},
+};
 
 #[derive(Debug)]
 pub struct Resource<T> {
@@ -30,8 +27,7 @@ impl<T> Resource<T>
         let id = match self.files.entry(file.into()) {
             Entry::Occupied(en) => *en.get(),
             Entry::Vacant(en) => {
-                let path = Path::new(T::DIR).join(en.key());
-                let item = T::load(path);
+                let item = load_data(en.key());
 
                 let id = self.items.len();
                 self.items.push(item);
@@ -43,21 +39,62 @@ impl<T> Resource<T>
         &self.items[id]
     }
 
-    pub fn get(&self, id: usize) -> Option<&T> { self.items.get(id) }
-
-    pub fn get_file<S>(&self, file: S) -> Option<&T>
+    pub fn get<B>(&self, by: B) -> Option<&T>
         where
-            S: Into<String>,
-    {
-        self.files
-            .get(&file.into())
-            .and_then(|&id| self.get(id))
-    }
+            Self: Get<B, Item=T>,
+    { Get::get(self, by) }
+
+    pub fn get_mut<B>(&mut self, by: B) -> Option<&mut T>
+        where
+            Self: GetMut<B, Item=T>,
+    { GetMut::get_mut(self, by) }
 
     pub fn len(&self) -> usize { self.items.len() }
 
     pub fn iter(&self) -> std::slice::Iter<T> { self.items.iter() }
     pub fn iter_mut(&mut self) -> std::slice::IterMut<T> { self.items.iter_mut() }
+}
+
+impl<T> Get<usize> for Resource<T> {
+    type Item = T;
+
+    fn get(&self, by: usize) -> Option<&Self::Item> { self.items.get(by) }
+}
+
+impl<T> Get<&str> for Resource<T> {
+    type Item = T;
+
+    fn get(&self, by: &str) -> Option<&Self::Item> {
+        let &id = self.files.get(by)?;
+        self.get(id)
+    }
+}
+
+impl<T> Get<String> for Resource<T> {
+    type Item = T;
+
+    fn get(&self, by: String) -> Option<&Self::Item> { self.get(by.as_str()) }
+}
+
+impl<T> GetMut<usize> for Resource<T> {
+    type Item = T;
+
+    fn get_mut(&mut self, by: usize) -> Option<&mut Self::Item> { self.items.get_mut(by) }
+}
+
+impl<T> GetMut<&str> for Resource<T> {
+    type Item = T;
+
+    fn get_mut(&mut self, by: &str) -> Option<&mut Self::Item> {
+        let &id = self.files.get(by)?;
+        self.get_mut(id)
+    }
+}
+
+impl<T> GetMut<String> for Resource<T> {
+    type Item = T;
+
+    fn get_mut(&mut self, by: String) -> Option<&mut Self::Item> { self.get_mut(by.as_str()) }
 }
 
 impl<T> Default for Resource<T> {
@@ -78,7 +115,7 @@ impl<T> Into<Vec<T>> for Resource<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{Load, Resource};
 
     #[derive(Debug)]
     struct Tile {
@@ -90,7 +127,7 @@ mod tests {
 
         fn load<P>(file: P) -> Self
             where
-                P: AsRef<Path>,
+                P: AsRef<std::path::Path>,
         {
             Tile {
                 name: file
@@ -118,10 +155,10 @@ mod tests {
         assert_eq!(res.get(2).unwrap().name, "three.tl");
         assert!(res.get(3).is_none());
 
-        assert_eq!(res.get_file("one.tl").unwrap().name, "one.tl");
-        assert_eq!(res.get_file("two.tl").unwrap().name, "two.tl");
-        assert_eq!(res.get_file("three.tl").unwrap().name, "three.tl");
-        assert!(res.get_file("four.tl").is_none());
+        assert_eq!(res.get("one.tl").unwrap().name, "one.tl");
+        assert_eq!(res.get("two.tl").unwrap().name, "two.tl");
+        assert_eq!(res.get("three.tl").unwrap().name, "three.tl");
+        assert!(res.get("four.tl").is_none());
 
         assert_eq!(res.len(), 3);
 
