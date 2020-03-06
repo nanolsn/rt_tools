@@ -32,38 +32,44 @@ impl Load for TexturePath {
     }
 }
 
-#[derive(Debug, Default)]
+type AtlasResult = Result<image::DynamicImage, AtlasError>;
+
+#[derive(Debug)]
 pub struct Atlas {
     images: Resource<TexturePath>,
+    size: u32,
 }
 
 impl Atlas {
-    pub fn new() -> Self { Atlas::default() }
+    pub fn new(size: u32) -> Self {
+        Atlas {
+            images: Resource::new(),
+            size,
+        }
+    }
 
     pub fn add<S>(&mut self, file: S) -> usize
         where
             S: Into<String>,
     { self.images.load(file) }
 
-    pub fn stitch_sprites(self, size: u32) -> Result<image::DynamicImage, AtlasError> {
-        self.stitch(size, image::open)
-    }
+    pub fn stitch_sprites(self) -> AtlasResult { self.stitch(image::open) }
 
-    pub fn stitch<F>(self, size: u32, mut f: F) -> Result<image::DynamicImage, AtlasError>
+    pub fn stitch<F>(self, mut f: F) -> AtlasResult
         where
             F: FnMut(String) -> image::ImageResult<image::DynamicImage>,
     {
         use image::{GenericImageView, GenericImage};
 
-        let sprites_side = (self.images.len() as f32).sqrt().ceil() as u32;
-        let texture_size = sprites_side * size;
-        let mut map = image::DynamicImage::new_rgba8(texture_size, texture_size);
+        let Atlas { images, size } = self;
+        let sprites_side = (images.len() as f32).sqrt().ceil() as u32;
+        let map_size = sprites_side * size;
+        let mut map = image::DynamicImage::new_rgba8(map_size, map_size);
 
-        let it = self
-            .images
+        let it = images
             .into_iter()
-            .map(|file| {
-                let img = f(file.0)?;
+            .map(|TexturePath(file)| {
+                let img = f(file)?;
 
                 if img.width() != size || img.height() != size {
                     Err(AtlasError::IncorrectSpriteSize)
@@ -115,7 +121,7 @@ mod tests {
     fn stitch() {
         use image::GenericImageView;
 
-        let mut atlas = Atlas::new();
+        let mut atlas = Atlas::new(SIZE);
         atlas.add("red");
         atlas.add("green");
         atlas.add("blue");
@@ -125,7 +131,7 @@ mod tests {
         atlas.add("white");
 
         let img = atlas
-            .stitch(SIZE, make_texture)
+            .stitch(make_texture)
             .unwrap();
 
         assert_eq!(img.get_pixel(0, 0), image::Rgba(RED));
