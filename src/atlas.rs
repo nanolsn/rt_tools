@@ -1,6 +1,6 @@
 use super::{
-    resource::Resource,
     load::Load,
+    resource::Resource,
 };
 
 #[derive(Debug)]
@@ -59,7 +59,7 @@ impl Atlas {
         where
             F: FnMut(String) -> image::ImageResult<image::DynamicImage>,
     {
-        use image::{GenericImageView, GenericImage};
+        use image::{GenericImage, GenericImageView};
 
         let Atlas { images, size } = self;
         let sprites_side = (images.len() as f32).sqrt().ceil() as u32;

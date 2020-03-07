@@ -1,15 +1,15 @@
-mod sides;
-mod point;
-mod shell_transform;
+mod atlas;
 mod axis;
-mod resource;
 mod get;
 mod load;
-mod atlas;
+mod point;
+mod resource;
+mod shell_transform;
+mod sides;
 
-pub use sides::*;
-pub use point::*;
-pub use shell_transform::*;
-pub use axis::*;
-pub use resource::*;
 pub use atlas::*;
+pub use axis::*;
+pub use point::*;
+pub use resource::*;
+pub use shell_transform::*;
+pub use sides::*;

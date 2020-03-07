@@ -1,11 +1,8 @@
-use glm::{
-    vec3,
-    Vec3,
-};
+use glm::{vec3, Vec3};
 
 use super::{
-    sides::*,
     axis::Axis,
+    sides::*,
 };
 
 pub trait ShellTransform {

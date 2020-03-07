@@ -1,11 +1,8 @@
-use std::collections::{
-    HashMap,
-    hash_map::Entry,
-};
+use std::collections::{hash_map::Entry, HashMap};
 
 use super::{
     get::{Get, GetMut},
-    load::{Load, load_data},
+    load::{load_data, Load},
 };
 
 #[derive(Debug)]
@@ -28,11 +25,10 @@ impl<T> Resource<T>
             Entry::Occupied(en) => *en.get(),
             Entry::Vacant(en) => {
                 let item = load_data(en.key());
-
                 let id = self.items.len();
+
                 self.items.push(item);
-                en.insert(id);
-                id
+                *en.insert(id)
             }
         }
     }
@@ -97,7 +93,12 @@ impl<T> GetMut<String> for Resource<T> {
 }
 
 impl<T> Default for Resource<T> {
-    fn default() -> Self { Resource { items: Vec::new(), files: HashMap::new() } }
+    fn default() -> Self {
+        Resource {
+            items: Vec::new(),
+            files: HashMap::new(),
+        }
+    }
 }
 
 impl<T> AsRef<[T]> for Resource<T> {
