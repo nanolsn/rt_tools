@@ -118,7 +118,7 @@ impl From<&str> for Sides {
     fn from(src: &str) -> Self {
         use std::convert::TryFrom;
 
-        if src == "*" {
+        if src == "." {
             return Sides::all();
         }
 
@@ -285,7 +285,7 @@ mod tests {
         let s: Sides = "qwepty".into();
         assert_eq!(s, Sides::empty());
 
-        let s: Sides = "*".into();
+        let s: Sides = ".".into();
         assert_eq!(s, Sides::all());
 
         let s: Sides = "f".into();

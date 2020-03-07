@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum ParseError<E> {
     ScanError(yaml::ScanError),
     FormatError,
@@ -57,7 +58,7 @@ impl Parse for glm::Vec3 {
         Ok(glm::Vec3::from_iterator(
             v
                 .iter()
-                .map(|y| y.as_f64().unwrap() as f32)
+                .map(|y| f32::parse(y).unwrap())
         ))
     }
 }
@@ -75,7 +76,7 @@ impl Parse for glm::Vec2 {
         Ok(glm::Vec2::from_iterator(
             v
                 .iter()
-                .map(|y| y.as_f64().unwrap() as f32)
+                .map(|y| f32::parse(y).unwrap())
         ))
     }
 }
@@ -84,16 +85,26 @@ impl<T> Parse for Vec<T>
     where
         T: Parse,
 {
+    type DataError = Option<T::DataError>;
+
+    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
+        yml
+            .as_vec()
+            .ok_or(None)?
+            .iter()
+            .map(|y| T::parse(y).map_err(|err| Some(err)))
+            .collect()
+    }
+}
+
+impl Parse for f32 {
     type DataError = ();
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
-        Ok(
-            yml
-                .as_vec()
-                .ok_or(())?
-                .iter()
-                .filter_map(|y| Parse::parse(y).ok())
-                .collect()
-        )
+        Ok(match yml {
+            r @ yaml::Yaml::Real(_) => r.as_f64().unwrap() as f32,
+            yaml::Yaml::Integer(n) => *n as f32,
+            _ => 0.,
+        })
     }
 }

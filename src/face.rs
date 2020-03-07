@@ -10,10 +10,11 @@ use super::{
 pub enum FaceError {
     IncorrectVertexNumber,
     Vec3Error,
+    Vec2Error,
     SidesError,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum FaceVertexes {
     Triangle([Vertex; 3]),
     Square([Vertex; 4]),
@@ -59,7 +60,7 @@ impl FaceVertexes {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Face {
     pub vertexes: FaceVertexes,
     pub contact: Sides,
@@ -76,22 +77,38 @@ impl Parse for Face {
     type DataError = FaceError;
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
-        let _contact: Sides = Parse::parse(&yml["contact"])
+        let layer = yml["layer"].as_i64().unwrap_or_default() as u32;
+
+        let contact: Sides = Parse::parse(&yml["contact"])
             .map_err(|_| FaceError::SidesError)?;
 
-        let _normal: glm::Vec3 = Parse::parse(&yml["normal"])
+        let normal: glm::Vec3 = Parse::parse(&yml["normal"])
             .map_err(|_| FaceError::Vec3Error)?;
 
-        let _positions: Vec<glm::Vec3> = Parse::parse(&yml["positions"])
+        let pos: Vec<glm::Vec3> = Parse::parse(&yml["positions"])
             .map_err(|_| FaceError::Vec3Error)?;
 
-        Err(FaceError::IncorrectVertexNumber)
+        let st: Vec<glm::Vec2> = Parse::parse(&yml["st"])
+            .map_err(|_| FaceError::Vec2Error)?;
+
+        let vs: Vec<Vertex> = pos
+            .iter()
+            .zip(st.iter())
+            .map(|(&pos, &st)| Vertex {
+                pos,
+                st,
+                norm: normal,
+            })
+            .collect();
+
+        Ok(Face::new(&vs, contact, layer)?)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::parse::load_yaml;
     use glm::{vec3, vec2};
 
     #[test]
@@ -119,5 +136,57 @@ mod tests {
         assert_eq!(vertexes.len(), 7);
         assert_eq!(indexes.len(), 9);
         assert_eq!(indexes[3..=8], [3, 4, 5, 3, 5, 6]);
+    }
+
+    #[test]
+    fn parse() {
+        let code = r#"
+        positions:
+          - [ -0.5, 0.5, -0.5 ]
+          - [ -0.5, 0.5, 0.5 ]
+          - [ 0.5, 0.5, 0.5 ]
+          - [ 0.5, 0.5, -0.5 ]
+
+        st:
+          - [ 0, 1 ]
+          - [ 0, 0 ]
+          - [ 1, 0 ]
+          - [ 1, 1 ]
+
+        normal: [ 0, 1, 0 ]
+        layer: 12
+        contact: .
+        "#;
+
+        let a: Face = load_yaml(code).unwrap();
+
+        let b = Face {
+            vertexes: FaceVertexes::Square([
+                Vertex {
+                    pos: vec3(-0.5, 0.5, -0.5),
+                    st: vec2(0., 1.),
+                    norm: vec3(0., 1., 0.),
+                },
+                Vertex {
+                    pos: vec3(-0.5, 0.5, 0.5),
+                    st: vec2(0., 0.),
+                    norm: vec3(0., 1., 0.),
+                },
+                Vertex {
+                    pos: vec3(0.5, 0.5, 0.5),
+                    st: vec2(1., 0.),
+                    norm: vec3(0., 1., 0.),
+                },
+                Vertex {
+                    pos: vec3(0.5, 0.5, -0.5),
+                    st: vec2(1., 1.),
+                    norm: vec3(0., 1., 0.),
+                },
+            ]),
+            contact: Sides::all(),
+            layer: 12,
+        };
+
+        assert_eq!(a, b);
     }
 }
