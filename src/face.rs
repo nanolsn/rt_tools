@@ -3,15 +3,27 @@ use std::convert::{TryFrom, TryInto};
 use super::{
     sides::Sides,
     vertex::Vertex,
-    parse::Parse,
+    parse::VecError,
 };
 
 #[derive(Debug)]
 pub enum FaceError {
     IncorrectVertexNumber,
-    Vec3Error,
-    Vec2Error,
-    SidesError,
+    VecError(VecError),
+    ArrayError,
+}
+
+impl From<VecError> for FaceError {
+    fn from(err: VecError) -> Self { FaceError::VecError(err) }
+}
+
+impl From<Option<VecError>> for FaceError {
+    fn from(err: Option<VecError>) -> Self {
+        match err {
+            None => FaceError::ArrayError,
+            Some(ve) => FaceError::VecError(ve),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -73,38 +85,6 @@ impl Face {
     }
 }
 
-impl Parse for Face {
-    type DataError = FaceError;
-
-    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
-        let layer = yml["layer"].as_i64().unwrap_or_default() as u32;
-
-        let contact: Sides = Parse::parse(&yml["contact"])
-            .map_err(|_| FaceError::SidesError)?;
-
-        let normal: glm::Vec3 = Parse::parse(&yml["normal"])
-            .map_err(|_| FaceError::Vec3Error)?;
-
-        let pos: Vec<glm::Vec3> = Parse::parse(&yml["positions"])
-            .map_err(|_| FaceError::Vec3Error)?;
-
-        let st: Vec<glm::Vec2> = Parse::parse(&yml["st"])
-            .map_err(|_| FaceError::Vec2Error)?;
-
-        let vs: Vec<Vertex> = pos
-            .iter()
-            .zip(st.iter())
-            .map(|(&pos, &st)| Vertex {
-                pos,
-                st,
-                norm: normal,
-            })
-            .collect();
-
-        Ok(Face::new(&vs, contact, layer)?)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,7 +121,7 @@ mod tests {
     #[test]
     fn parse() {
         let code = r#"
-        positions:
+        pos:
           - [ -0.5, 0.5, -0.5 ]
           - [ -0.5, 0.5, 0.5 ]
           - [ 0.5, 0.5, 0.5 ]
@@ -153,7 +133,7 @@ mod tests {
           - [ 1, 0 ]
           - [ 1, 1 ]
 
-        normal: [ 0, 1, 0 ]
+        norm: [ 0, 1, 0 ]
         layer: 12
         contact: .
         "#;

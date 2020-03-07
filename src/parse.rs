@@ -45,14 +45,20 @@ impl Parse for super::Sides {
     }
 }
 
+#[derive(Debug)]
+pub enum VecError {
+    Vec3,
+    Vec2,
+}
+
 impl Parse for glm::Vec3 {
-    type DataError = ();
+    type DataError = VecError;
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
-        let v = yml.as_vec().ok_or(())?;
+        let v = yml.as_vec().ok_or(VecError::Vec3)?;
 
         if v.len() != 3 {
-            Err(())?
+            Err(VecError::Vec3)?
         }
 
         Ok(glm::Vec3::from_iterator(
@@ -64,13 +70,13 @@ impl Parse for glm::Vec3 {
 }
 
 impl Parse for glm::Vec2 {
-    type DataError = ();
+    type DataError = VecError;
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
-        let v = yml.as_vec().ok_or(())?;
+        let v = yml.as_vec().ok_or(VecError::Vec2)?;
 
         if v.len() != 2 {
-            Err(())?
+            Err(VecError::Vec2)?
         }
 
         Ok(glm::Vec2::from_iterator(
@@ -106,5 +112,47 @@ impl Parse for f32 {
             yaml::Yaml::Integer(n) => *n as f32,
             _ => 0.,
         })
+    }
+}
+
+impl Parse for u32 {
+    type DataError = ();
+
+    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
+        Ok(match yml {
+            yaml::Yaml::Integer(n) => *n as u32,
+            _ => 0,
+        })
+    }
+}
+
+use super::{
+    face::*,
+    vertex::Vertex,
+    sides::Sides,
+};
+
+impl Parse for Face {
+    type DataError = FaceError;
+
+    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
+        let layer: u32 = Parse::parse(&yml["layer"]).unwrap();
+        let contact: Sides = Parse::parse(&yml["contact"]).unwrap();
+
+        let norm: glm::Vec3 = Parse::parse(&yml["norm"])?;
+        let pos: Vec<glm::Vec3> = Parse::parse(&yml["pos"])?;
+        let st: Vec<glm::Vec2> = Parse::parse(&yml["st"])?;
+
+        let vs: Vec<Vertex> = pos
+            .into_iter()
+            .zip(st)
+            .map(|(pos, st)| Vertex {
+                pos,
+                st,
+                norm,
+            })
+            .collect();
+
+        Ok(Face::new(&vs, contact, layer)?)
     }
 }
