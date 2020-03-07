@@ -6,4 +6,5 @@ edition = "2018"
 
 [dependencies]
 glm = { package = "nalgebra-glm", version = "0.6" }
+yaml = { package = "yaml-rust", version = "0.4.3" }
 image = "0.23"

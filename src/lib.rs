@@ -6,6 +6,10 @@ mod point;
 mod resource;
 mod shell_transform;
 mod sides;
+mod vertex;
+mod face;
+mod model;
+mod parse;
 
 pub use atlas::*;
 pub use axis::*;
@@ -13,3 +17,7 @@ pub use point::*;
 pub use resource::*;
 pub use shell_transform::*;
 pub use sides::*;
+pub use vertex::*;
+pub use face::*;
+pub use model::*;
+pub use parse::*;

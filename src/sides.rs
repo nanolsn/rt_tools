@@ -98,13 +98,11 @@ impl std::fmt::Debug for Sides {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use std::fmt::Write;
 
-        f.write_char('[')?;
-
-        for s in self.into_iter() {
-            if self.contains(s) { f.write_char(s.into())? }
+        for s in self.into_iter().filter(|&s| self.contains(s)) {
+            f.write_char(s.into())?
         }
 
-        f.write_char(']')
+        Ok(())
     }
 }
 
@@ -114,6 +112,21 @@ impl Default for Sides {
 
 impl From<u8> for Sides {
     fn from(val: u8) -> Self { Sides { bits: val } }
+}
+
+impl From<&str> for Sides {
+    fn from(src: &str) -> Self {
+        use std::convert::TryFrom;
+
+        if src == "*" {
+            return Sides::all();
+        }
+
+        src
+            .chars()
+            .filter_map(|c| Side::try_from(c).ok())
+            .fold(Sides::empty(), |res, s| res | s)
+    }
 }
 
 impl Into<Sides> for Side {
@@ -265,15 +278,39 @@ mod tests {
     }
 
     #[test]
+    fn from() {
+        let s: Sides = "".into();
+        assert_eq!(s, Sides::empty());
+
+        let s: Sides = "qwepty".into();
+        assert_eq!(s, Sides::empty());
+
+        let s: Sides = "*".into();
+        assert_eq!(s, Sides::all());
+
+        let s: Sides = "f".into();
+        assert_eq!(s, Front.into());
+
+        let s: Sides = "dddddd".into();
+        assert_eq!(s, Down.into());
+
+        let s: Sides = "rlrru".into();
+        assert_eq!(s, Right | Left | Up);
+
+        let s: Sides = "udlrfb".into();
+        assert_eq!(s, Sides::all());
+    }
+
+    #[test]
     fn debug() {
         let bdr: Sides = 0b101010.into();
-        assert_eq!(format!("{:?}", bdr), "[bdr]");
+        assert_eq!(format!("{:?}", bdr), "bdr");
 
         let ful: Sides = 0b010101.into();
-        assert_eq!(format!("{:?}", ful), "[ful]");
+        assert_eq!(format!("{:?}", ful), "ful");
 
         let empty = Sides::empty();
-        assert_eq!(format!("{:?}", empty), "[]");
+        assert_eq!(format!("{:?}", empty), "");
     }
 
     #[test]
