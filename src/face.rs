@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use super::{
     sides::Sides,
     vertex::Vertex,
-    parse::VecError,
+    parse::{Parse, VecError, face::yaml_to_face},
 };
 
 #[derive(Debug)]
@@ -85,10 +85,15 @@ impl Face {
     }
 }
 
+impl Parse for Face {
+    type DataError = FaceError;
+
+    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_face(yml) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::parse::load_yaml;
     use glm::{vec3, vec2};
 
     #[test]
@@ -116,57 +121,5 @@ mod tests {
         assert_eq!(vertexes.len(), 7);
         assert_eq!(indexes.len(), 9);
         assert_eq!(indexes[3..=8], [3, 4, 5, 3, 5, 6]);
-    }
-
-    #[test]
-    fn parse() {
-        let code = r#"
-        pos:
-          - [ -0.5, 0.5, -0.5 ]
-          - [ -0.5, 0.5, 0.5 ]
-          - [ 0.5, 0.5, 0.5 ]
-          - [ 0.5, 0.5, -0.5 ]
-
-        st:
-          - [ 0, 1 ]
-          - [ 0, 0 ]
-          - [ 1, 0 ]
-          - [ 1, 1 ]
-
-        norm: [ 0, 1, 0 ]
-        layer: 12
-        contact: .
-        "#;
-
-        let a: Face = load_yaml(code).unwrap();
-
-        let b = Face {
-            vertexes: FaceVertexes::Square([
-                Vertex {
-                    pos: vec3(-0.5, 0.5, -0.5),
-                    st: vec2(0., 1.),
-                    norm: vec3(0., 1., 0.),
-                },
-                Vertex {
-                    pos: vec3(-0.5, 0.5, 0.5),
-                    st: vec2(0., 0.),
-                    norm: vec3(0., 1., 0.),
-                },
-                Vertex {
-                    pos: vec3(0.5, 0.5, 0.5),
-                    st: vec2(1., 0.),
-                    norm: vec3(0., 1., 0.),
-                },
-                Vertex {
-                    pos: vec3(0.5, 0.5, -0.5),
-                    st: vec2(1., 1.),
-                    norm: vec3(0., 1., 0.),
-                },
-            ]),
-            contact: Sides::all(),
-            layer: 12,
-        };
-
-        assert_eq!(a, b);
     }
 }

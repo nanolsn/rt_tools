@@ -1,4 +1,8 @@
-use super::sides::*;
+use std::iter::FromIterator;
+use super::{
+    sides::*,
+    parse::{Parse, point::yaml_to_point},
+};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Point(pub i32, pub i32, pub i32);
@@ -81,6 +85,22 @@ impl From<Side> for Point {
             Right => Self::right(),
         }
     }
+}
+
+impl FromIterator<i32> for Point {
+    fn from_iter<T: IntoIterator<Item=i32>>(iter: T) -> Self {
+        let mut iter = iter.into_iter();
+        let x = iter.next().unwrap_or(0);
+        let y = iter.next().unwrap_or(0);
+        let z = iter.next().unwrap_or(0);
+        Point(x, y, z)
+    }
+}
+
+impl Parse for Point {
+    type DataError = ();
+
+    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_point(yml) }
 }
 
 impl std::ops::Add for Point {
