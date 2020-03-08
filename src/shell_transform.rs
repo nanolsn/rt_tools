@@ -19,6 +19,16 @@ pub trait ShellTransform {
             self.turn_clockwise(axis)
         }
     }
+
+    fn action(&mut self, action: ShellTransformAction) -> &mut Self {
+        match action {
+            Flip(ax) => self.flip(ax),
+            TurnCounterClockwise(ax) => self.turn_counter_clockwise(ax),
+            TurnClockwise(ax) => self.turn_clockwise(ax),
+        };
+
+        self
+    }
 }
 
 impl ShellTransform for Vec3 {
@@ -175,6 +185,44 @@ impl Default for Shell {
     }
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum ShellTransformAction {
+    Flip(Axis),
+    TurnCounterClockwise(Axis),
+    TurnClockwise(Axis),
+}
+
+use ShellTransformAction::*;
+
+impl std::convert::TryFrom<&str> for ShellTransformAction {
+    type Error = ();
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        use std::convert::TryInto;
+
+        if s.len() != "turn_-?".len() && s.len() != "turn_?".len() { Err(())? }
+
+        let last = s.chars().rev().next().ok_or(())?;
+
+        Ok(match s {
+            _ if s.starts_with("flip_") => Flip(last.try_into()?),
+            _ if s.starts_with("turn_-") => TurnClockwise(last.try_into()?),
+            _ if s.starts_with("turn_") => TurnCounterClockwise(last.try_into()?),
+            _ => Err(())?,
+        })
+    }
+}
+
+impl std::fmt::Display for ShellTransformAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Flip(ax) => write!(f, "flip_{}", ax),
+            TurnCounterClockwise(ax) => write!(f, "turn_{}", ax),
+            TurnClockwise(ax) => write!(f, "turn_-{}", ax),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,5 +331,37 @@ mod tests {
             .turn_counter_clockwise(Axis::Z);
 
         assert_eq!(s, *Shell::new().turn_clockwise(Axis::Z));
+    }
+
+    #[test]
+    fn display() {
+        let a = format!("{}", Flip(Axis::X));
+        assert_eq!(a, "flip_x");
+
+        let a = format!("{}", TurnCounterClockwise(Axis::Y));
+        assert_eq!(a, "turn_y");
+
+        let a = format!("{}", TurnClockwise(Axis::Z));
+        assert_eq!(a, "turn_-z");
+    }
+
+    #[test]
+    fn try_from() {
+        use std::convert::TryFrom;
+
+        let a = ShellTransformAction::try_from(".");
+        assert_eq!(a, Err(()));
+
+        let a = ShellTransformAction::try_from("wwww_x");
+        assert_eq!(a, Err(()));
+
+        let a = ShellTransformAction::try_from("flip_x");
+        assert_eq!(a, Ok(Flip(Axis::X)));
+
+        let a = ShellTransformAction::try_from("turn_y");
+        assert_eq!(a, Ok(TurnCounterClockwise(Axis::Y)));
+
+        let a = ShellTransformAction::try_from("turn_-z");
+        assert_eq!(a, Ok(TurnClockwise(Axis::Z)));
     }
 }
