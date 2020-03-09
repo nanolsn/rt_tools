@@ -10,4 +10,5 @@ pub mod resource;
 pub mod shell_transform;
 pub mod sides;
 pub mod state;
+pub mod tile;
 pub mod vertex;

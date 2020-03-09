@@ -3,6 +3,7 @@ pub mod model;
 pub mod point;
 pub mod sides;
 pub mod state;
+pub mod tile;
 
 #[derive(Debug)]
 pub enum ParseError<E> {
@@ -103,7 +104,7 @@ impl<T> Parse for Vec<T>
             .as_vec()
             .ok_or(None)?
             .iter()
-            .map(|y| T::parse(y).map_err(|err| Some(err)))
+            .map(|y| parse(y).map_err(|err| Some(err)))
             .collect()
     }
 }
@@ -118,7 +119,7 @@ impl<T> Parse for Option<T>
         Ok(if yml.is_badvalue() {
             None
         } else {
-            Some(T::parse(yml)?)
+            Some(parse(yml)?)
         })
     }
 }
@@ -162,3 +163,15 @@ macro_rules! impl_int {
     };
 }
 impl_int!(u8 i8 u16 i16 u32 i32 u64 i64 isize usize);
+
+impl Parse for String {
+    type DataError = ();
+
+    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
+        Ok(yml
+            .as_str()
+            .ok_or(())?
+            .into()
+        )
+    }
+}

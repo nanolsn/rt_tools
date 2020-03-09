@@ -148,12 +148,12 @@ mod tests {
     #[test]
     fn load() {
         let mut res: Resource<Tile> = Resource::new();
-        assert!(res.load("one.tl").is_ok());
-        assert!(res.load("two.tl").is_ok());
-        assert!(res.load("two.tl").is_err());
-        assert!(res.load("one.tl").is_err());
-        assert!(res.load("one.tl").is_err());
-        assert!(res.load("three.tl").is_ok());
+        res.load("one.tl").unwrap();
+        res.load("two.tl").unwrap();
+        res.load("two.tl").unwrap();
+        res.load("one.tl").unwrap();
+        res.load("one.tl").unwrap();
+        res.load("three.tl").unwrap();
 
         assert_eq!(res.get(0).unwrap().name, "one.tl");
         assert_eq!(res.get(1).unwrap().name, "two.tl");
