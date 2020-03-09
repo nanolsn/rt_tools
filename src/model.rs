@@ -1,10 +1,21 @@
 use super::{
-    face::Face,
+    face::{Face, FaceError},
     sides::Sides,
     vertex::Vertex,
+    parse::{Parse, model::yaml_to_model},
 };
 
 #[derive(Debug)]
+pub enum ModelError {
+    FacesError,
+    FaceError(FaceError),
+}
+
+impl From<FaceError> for ModelError {
+    fn from(err: FaceError) -> Self { ModelError::FaceError(err) }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Model {
     pub faces: Vec<Face>,
     pub full_sides: Sides,
@@ -22,4 +33,10 @@ impl Model {
 
         (vertexes, indexes)
     }
+}
+
+impl Parse for Model {
+    type DataError = ModelError;
+
+    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_model(yml) }
 }

@@ -1,6 +1,7 @@
 pub mod face;
 pub mod sides;
 pub mod point;
+pub mod model;
 
 #[derive(Debug)]
 pub enum ParseError<E> {
