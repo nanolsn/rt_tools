@@ -5,9 +5,14 @@ pub mod model;
 
 #[derive(Debug)]
 pub enum ParseError<E> {
+    IOError(std::io::Error),
     ScanError(yaml::ScanError),
     FormatError,
     DataError(E),
+}
+
+impl<E> From<std::io::Error> for ParseError<E> {
+    fn from(err: std::io::Error) -> Self { ParseError::IOError(err) }
 }
 
 impl<E> From<yaml::ScanError> for ParseError<E> {
@@ -45,6 +50,15 @@ pub fn parse_code<T, S>(code: S) -> Result<T, ParseError<T::DataError>>
 
     let yml = ls.into_iter().next().unwrap();
     T::parse(&yml).map_err(|err| ParseError::DataError(err))
+}
+
+pub fn parse_file<T, P>(path: P) -> Result<T, ParseError<T::DataError>>
+    where
+        T: Parse,
+        P: AsRef<std::path::Path>,
+{
+    let code = std::fs::read_to_string(path)?;
+    parse_code(code)
 }
 
 #[derive(Debug)]
