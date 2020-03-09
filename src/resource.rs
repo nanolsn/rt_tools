@@ -17,18 +17,18 @@ impl<T> Resource<T>
 {
     pub fn new() -> Self { Resource::default() }
 
-    pub fn load<S>(&mut self, file: S) -> usize
+    pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
         where
             S: Into<String>,
     {
         match self.files.entry(file.into()) {
-            Entry::Occupied(en) => *en.get(),
+            Entry::Occupied(en) => Ok(*en.get()),
             Entry::Vacant(en) => {
-                let item = load_data(en.key());
+                let item = load_data(en.key())?;
                 let id = self.items.len();
 
                 self.items.push(item);
-                *en.insert(id)
+                Ok(*en.insert(id))
             }
         }
     }
@@ -115,40 +115,45 @@ impl<T> Into<Vec<T>> for Resource<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Load, Resource};
+    use super::*;
+    use super::super::load::LoadDir;
 
     #[derive(Debug)]
     struct Tile {
         name: String,
     }
 
-    impl Load for Tile {
+    impl LoadDir for Tile {
         const DIR: &'static str = "tiles";
+    }
 
-        fn load<P>(file: P) -> Self
+    impl Load for Tile {
+        type Error = ();
+
+        fn load<P>(file: P) -> Result<Self, Self::Error>
             where
                 P: AsRef<std::path::Path>,
         {
-            Tile {
+            Ok(Tile {
                 name: file
                     .as_ref()
                     .file_name()
                     .unwrap_or_default()
                     .to_string_lossy()
                     .into()
-            }
+            })
         }
     }
 
     #[test]
     fn load() {
         let mut res: Resource<Tile> = Resource::new();
-        res.load("one.tl");
-        res.load("two.tl");
-        res.load("two.tl");
-        res.load("one.tl");
-        res.load("one.tl");
-        res.load("three.tl");
+        assert!(res.load("one.tl").is_ok());
+        assert!(res.load("two.tl").is_ok());
+        assert!(res.load("two.tl").is_err());
+        assert!(res.load("one.tl").is_err());
+        assert!(res.load("one.tl").is_err());
+        assert!(res.load("three.tl").is_ok());
 
         assert_eq!(res.get(0).unwrap().name, "one.tl");
         assert_eq!(res.get(1).unwrap().name, "two.tl");

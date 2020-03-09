@@ -1,7 +1,8 @@
 pub mod face;
-pub mod sides;
-pub mod point;
 pub mod model;
+pub mod point;
+pub mod sides;
+pub mod state;
 
 #[derive(Debug)]
 pub enum ParseError<E> {
@@ -24,6 +25,7 @@ pub trait Parse
         Self: Sized,
 {
     type DataError;
+
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError>;
 }
 
@@ -35,7 +37,7 @@ pub fn parse<T>(yml: &yaml::Yaml) -> Result<T, T::DataError>
 pub fn parse_default<T>(yml: &yaml::Yaml) -> T
     where
         T: Parse + Default,
-{ T::parse(yml).unwrap_or_default() }
+{ parse(yml).unwrap_or_default() }
 
 pub fn parse_code<T, S>(code: S) -> Result<T, ParseError<T::DataError>>
     where
@@ -44,12 +46,10 @@ pub fn parse_code<T, S>(code: S) -> Result<T, ParseError<T::DataError>>
 {
     let ls = yaml::YamlLoader::load_from_str(code.as_ref())?;
 
-    if ls.len() != 1 {
-        Err(ParseError::FormatError)?
-    }
+    if ls.len() != 1 { Err(ParseError::FormatError)? }
 
     let yml = ls.into_iter().next().unwrap();
-    T::parse(&yml).map_err(|err| ParseError::DataError(err))
+    parse(&yml).map_err(|err| ParseError::DataError(err))
 }
 
 pub fn parse_file<T, P>(path: P) -> Result<T, ParseError<T::DataError>>
@@ -161,4 +161,4 @@ macro_rules! impl_int {
         })*
     };
 }
-impl_int!(u8 i8 u16 i16 u32 i32 u64 i64);
+impl_int!(u8 i8 u16 i16 u32 i32 u64 i64 isize usize);

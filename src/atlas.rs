@@ -1,5 +1,5 @@
 use super::{
-    load::Load,
+    load::{Load, LoadDir},
     resource::Resource,
 };
 
@@ -16,19 +16,23 @@ impl From<image::ImageError> for AtlasError {
 #[derive(Debug)]
 struct TexturePath(String);
 
-impl Load for TexturePath {
+impl LoadDir for TexturePath {
     const DIR: &'static str = "textures";
+}
 
-    fn load<P>(file: P) -> Self
+impl Load for TexturePath {
+    type Error = ();
+
+    fn load<P>(file: P) -> Result<Self, Self::Error>
         where
             P: AsRef<std::path::Path>,
     {
-        TexturePath(
+        Ok(TexturePath(
             file
                 .as_ref()
                 .to_string_lossy()
                 .into()
-        )
+        ))
     }
 }
 
@@ -48,10 +52,10 @@ impl Atlas {
         }
     }
 
-    pub fn add<S>(&mut self, file: S) -> usize
+    pub fn add<S>(&mut self, file: S) -> Option<usize>
         where
             S: Into<String>,
-    { self.images.load(file) }
+    { self.images.load(file).ok() }
 
     pub fn stitch_sprites(self) -> AtlasResult { self.stitch(image::open) }
 

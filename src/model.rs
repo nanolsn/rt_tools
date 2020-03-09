@@ -3,6 +3,7 @@ use super::{
     sides::Sides,
     vertex::Vertex,
     parse::{Parse, model::yaml_to_model},
+    load::LoadDir,
 };
 
 #[derive(Debug)]
@@ -39,4 +40,8 @@ impl Parse for Model {
     type DataError = ModelError;
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_model(yml) }
+}
+
+impl LoadDir for Model {
+    const DIR: &'static str = "models";
 }

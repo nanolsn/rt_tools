@@ -32,6 +32,18 @@ pub trait ShellTransform {
     }
 }
 
+pub fn action_slice<S, I>(shell: &mut S, actions: I) -> &mut S
+    where
+        S: ShellTransform,
+        I: IntoIterator<Item=ShellTransformAction>,
+{
+    for act in actions {
+        shell.action(act);
+    }
+
+    shell
+}
+
 impl ShellTransform for Vec3 {
     fn flip(&mut self, axis: Axis) -> &mut Self {
         *self = match axis {
