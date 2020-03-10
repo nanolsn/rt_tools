@@ -2,7 +2,7 @@ use std::collections::{hash_map::Entry, HashMap};
 
 use super::{
     get::{Get, GetMut},
-    load::{load_data, Load},
+    load::{load_data_with, Load},
 };
 
 #[derive(Debug)]
@@ -17,14 +17,14 @@ impl<T> Resource<T>
 {
     pub fn new() -> Self { Resource::default() }
 
-    pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
+    pub fn load_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<usize, T::Error>
         where
             S: Into<String>,
     {
         match self.files.entry(file.into()) {
             Entry::Occupied(en) => Ok(*en.get()),
             Entry::Vacant(en) => {
-                let item = load_data(en.key())?;
+                let item = load_data_with(en.key(), loader)?;
                 let id = self.items.len();
 
                 self.items.push(item);
@@ -48,6 +48,16 @@ impl<T> Resource<T>
     pub fn iter(&self) -> std::slice::Iter<T> { self.items.iter() }
     pub fn iter_mut(&mut self) -> std::slice::IterMut<T> { self.items.iter_mut() }
     pub fn into_iter(self) -> std::vec::IntoIter<T> { self.items.into_iter() }
+}
+
+impl<T> Resource<T>
+    where
+        T: Load<Loader=()>,
+{
+    pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
+        where
+            S: Into<String>,
+    { self.load_with(file, &mut ()) }
 }
 
 impl<T> Get<usize> for Resource<T> {
@@ -116,7 +126,7 @@ impl<T> Into<Vec<T>> for Resource<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::load::LoadDir;
+    use super::super::load::{Load, LoadDir};
 
     #[derive(Debug)]
     struct Tile {
@@ -129,10 +139,12 @@ mod tests {
 
     impl Load for Tile {
         type Error = ();
+        type Loader = ();
 
-        fn load<P>(file: P) -> Result<Self, Self::Error>
+        fn load<P>(file: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
             where
                 P: AsRef<std::path::Path>,
+                Self: Sized,
         {
             Ok(Tile {
                 name: file

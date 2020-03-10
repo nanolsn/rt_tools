@@ -22,10 +22,12 @@ impl LoadDir for TexturePath {
 
 impl Load for TexturePath {
     type Error = ();
+    type Loader = ();
 
-    fn load<P>(file: P) -> Result<Self, Self::Error>
+    fn load<P>(file: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
         where
             P: AsRef<std::path::Path>,
+            Self: Sized,
     {
         Ok(TexturePath(
             file
