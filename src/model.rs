@@ -2,7 +2,7 @@ use super::{
     face::{Face, FaceError},
     sides::Sides,
     vertex::Vertex,
-    parse::{Parse, model::yaml_to_model},
+    parse::{ParseYaml, model::yaml_to_model},
     load::LoadDir,
 };
 
@@ -36,7 +36,7 @@ impl Model {
     }
 }
 
-impl Parse for Model {
+impl ParseYaml for Model {
     type DataError = ModelError;
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_model(yml) }

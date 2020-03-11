@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use super::parse::{Parse, sides::yaml_to_sides};
+use super::parse::{ParseYaml, sides::yaml_to_sides};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Side {
@@ -145,7 +145,7 @@ impl Into<Sides> for Side {
     }
 }
 
-impl Parse for Sides {
+impl ParseYaml for Sides {
     type DataError = ();
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { Ok(yaml_to_sides(yml)) }

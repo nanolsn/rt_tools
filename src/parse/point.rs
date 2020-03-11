@@ -1,6 +1,6 @@
 use super::{
     super::point::Point,
-    Parse,
+    ParseYaml,
 };
 
 pub fn yaml_to_point(yml: &yaml::Yaml) -> Result<Point, ()> {

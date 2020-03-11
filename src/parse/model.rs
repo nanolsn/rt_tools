@@ -3,7 +3,7 @@ use super::{
         model::{Model, ModelError},
         face::*,
     },
-    parse_default,
+    parse_or_default,
     parse,
 };
 
@@ -14,7 +14,7 @@ pub fn yaml_to_model(yml: &yaml::Yaml) -> Result<Model, ModelError> {
             Some(err) => err.into(),
         })?;
 
-    let full_sides = parse_default(&yml["full_sides"]);
+    let full_sides = parse_or_default(&yml["full_sides"]);
 
     Ok(Model { faces, full_sides })
 }

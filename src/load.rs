@@ -1,5 +1,5 @@
 use crate::parse::{
-    Parse,
+    ParseYaml,
     YamlError,
     parse_file,
 };
@@ -22,7 +22,7 @@ pub trait Load: LoadDir {
 
 impl<T> Load for T
     where
-        T: LoadDir + Parse,
+        T: LoadDir + ParseYaml,
 {
     type Error = YamlError<T::DataError>;
     type Loader = ();

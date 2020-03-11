@@ -3,7 +3,7 @@ use super::{
         state::*,
         model::Model,
         resource::Resource,
-        shell_transform::{Shell, ShellTransformAction, action_slice},
+        shell_transform::{Shell, ShellTransformAction, apply_actions},
     },
     parse,
 };
@@ -21,7 +21,7 @@ pub fn yaml_to_state(yml: &yaml::Yaml, res: &mut Resource<Model>, models: &[Stri
 
     Ok(State {
         model: res.load(model_path)?,
-        shell: *action_slice(&mut shell, transform),
+        shell: *apply_actions(&mut shell, transform),
         layers: parse(&yml["layers"]).unwrap(),
     })
 }

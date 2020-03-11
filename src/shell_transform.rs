@@ -3,7 +3,7 @@ use glm::{vec3, Vec3};
 use super::{
     axis::Axis,
     sides::*,
-    parse::Parse,
+    parse::ParseYaml,
 };
 
 pub trait ShellTransform {
@@ -20,25 +20,26 @@ pub trait ShellTransform {
             self.turn_clockwise(axis)
         }
     }
+}
 
-    fn action(&mut self, action: ShellTransformAction) -> &mut Self {
-        match action {
-            Flip(ax) => self.flip(ax),
-            TurnCounterClockwise(ax) => self.turn_counter_clockwise(ax),
-            TurnClockwise(ax) => self.turn_clockwise(ax),
-        };
-
-        self
+pub fn apply_action<S>(shell: &mut S, action: ShellTransformAction) -> &mut S
+    where
+        S: ShellTransform,
+{
+    match action {
+        Flip(ax) => shell.flip(ax),
+        TurnCounterClockwise(ax) => shell.turn_counter_clockwise(ax),
+        TurnClockwise(ax) => shell.turn_clockwise(ax),
     }
 }
 
-pub fn action_slice<S, I>(shell: &mut S, actions: I) -> &mut S
+pub fn apply_actions<S, I>(shell: &mut S, actions: I) -> &mut S
     where
         S: ShellTransform,
         I: IntoIterator<Item=ShellTransformAction>,
 {
     for act in actions {
-        shell.action(act);
+        apply_action(shell, act);
     }
 
     shell
@@ -236,7 +237,7 @@ impl std::fmt::Display for ShellTransformAction {
     }
 }
 
-impl Parse for ShellTransformAction {
+impl ParseYaml for ShellTransformAction {
     type DataError = ();
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {

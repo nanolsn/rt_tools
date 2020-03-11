@@ -4,15 +4,15 @@ use super::{
         vertex::Vertex,
         sides::Sides,
     },
-    parse_default,
+    parse_or_default,
     parse,
 };
 
 pub fn yaml_to_face(yml: &yaml::Yaml) -> Result<Face, FaceError> {
     use glm::{Vec2, Vec3};
 
-    let layer: u32 = parse_default(&yml["layer"]);
-    let contact: Sides = parse_default(&yml["contact"]);
+    let layer: u32 = parse_or_default(&yml["layer"]);
+    let contact: Sides = parse_or_default(&yml["contact"]);
 
     let norm: Vec3 = parse(&yml["norm"])?;
     let pos: Vec<Vec3> = parse(&yml["pos"])?;

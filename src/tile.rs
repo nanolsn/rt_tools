@@ -6,7 +6,7 @@ use super::{
     parse::{
         tile::yaml_to_tile,
         YamlError,
-        load_yaml,
+        load_yaml_file,
     },
 };
 
@@ -43,7 +43,7 @@ impl Load for Tile {
             P: AsRef<std::path::Path>,
             Self: Sized,
     {
-        let yml = load_yaml(file)?;
+        let yml = load_yaml_file(file)?;
 
         let res = yaml_to_tile(&yml, loader)
             .map_err(|e| YamlError::DataError(e))?;

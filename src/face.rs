@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use super::{
     sides::Sides,
     vertex::Vertex,
-    parse::{Parse, VecError, face::yaml_to_face},
+    parse::{ParseYaml, VecError, face::yaml_to_face},
 };
 
 #[derive(Debug)]
@@ -85,7 +85,7 @@ impl Face {
     }
 }
 
-impl Parse for Face {
+impl ParseYaml for Face {
     type DataError = FaceError;
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_face(yml) }

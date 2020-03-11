@@ -1,7 +1,7 @@
 use std::iter::FromIterator;
 use super::{
     sides::*,
-    parse::{Parse, point::yaml_to_point},
+    parse::{ParseYaml, point::yaml_to_point},
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -97,7 +97,7 @@ impl FromIterator<i32> for Point {
     }
 }
 
-impl Parse for Point {
+impl ParseYaml for Point {
     type DataError = ();
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_point(yml) }

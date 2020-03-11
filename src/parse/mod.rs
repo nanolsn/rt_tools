@@ -21,7 +21,7 @@ impl<E> From<yaml::ScanError> for YamlError<E> {
     fn from(err: yaml::ScanError) -> Self { YamlError::ScanError(err) }
 }
 
-pub trait Parse
+pub trait ParseYaml
     where
         Self: Sized,
 {
@@ -32,45 +32,46 @@ pub trait Parse
 
 pub fn parse<T>(yml: &yaml::Yaml) -> Result<T, T::DataError>
     where
-        T: Parse,
+        T: ParseYaml,
 { T::parse(yml) }
 
-pub fn parse_default<T>(yml: &yaml::Yaml) -> T
+pub fn parse_or_default<T>(yml: &yaml::Yaml) -> T
     where
-        T: Parse + Default,
+        T: ParseYaml + Default,
 { parse(yml).unwrap_or_default() }
-
-pub fn parse_code<T, S>(code: S) -> Result<T, YamlError<T::DataError>>
-    where
-        T: Parse,
-        S: AsRef<str>,
-{
-    let ls = yaml::YamlLoader::load_from_str(code.as_ref())?;
-
-    if ls.len() != 1 { Err(YamlError::FormatError)? }
-
-    let yml = ls.into_iter().next().unwrap();
-    parse(&yml).map_err(|err| YamlError::DataError(err))
-}
 
 pub fn parse_file<T, P>(path: P) -> Result<T, YamlError<T::DataError>>
     where
-        T: Parse,
+        T: ParseYaml,
         P: AsRef<std::path::Path>,
 {
     let code = std::fs::read_to_string(path)?;
     parse_code(code)
 }
 
-pub fn load_yaml<P, E>(file: P) -> Result<yaml::Yaml, YamlError<E>>
+pub fn parse_code<T, S>(code: S) -> Result<T, YamlError<T::DataError>>
+    where
+        T: ParseYaml,
+        S: AsRef<str>,
+{
+    let yml = load_yaml_code(code)?;
+    parse(&yml).map_err(|err| YamlError::DataError(err))
+}
+
+pub fn load_yaml_file<P, E>(file: P) -> Result<yaml::Yaml, YamlError<E>>
     where
         P: AsRef<std::path::Path>,
 {
     let code = std::fs::read_to_string(file)?;
-    let ls = yaml::YamlLoader::load_from_str(&*code)?;
+    load_yaml_code(code)
+}
 
+pub fn load_yaml_code<S, E>(code: S) -> Result<yaml::Yaml, YamlError<E>>
+    where
+        S: AsRef<str>,
+{
+    let ls = yaml::YamlLoader::load_from_str(code.as_ref())?;
     if ls.len() != 1 { Err(YamlError::FormatError)? }
-
     ls.into_iter().next().ok_or(YamlError::FormatError)
 }
 
@@ -84,7 +85,7 @@ pub enum VecError {
 
 macro_rules! impl_vec {
     ($($i:ident $n:literal),*) => {
-        $(impl Parse for glm::$i {
+        $(impl ParseYaml for glm::$i {
             type DataError = VecError;
 
             fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
@@ -105,9 +106,9 @@ macro_rules! impl_vec {
 }
 impl_vec!(Vec4 4, Vec3 3, Vec2 2, Vec1 1);
 
-impl<T> Parse for Vec<T>
+impl<T> ParseYaml for Vec<T>
     where
-        T: Parse,
+        T: ParseYaml,
 {
     type DataError = Option<T::DataError>;
 
@@ -121,9 +122,9 @@ impl<T> Parse for Vec<T>
     }
 }
 
-impl<T> Parse for Option<T>
+impl<T> ParseYaml for Option<T>
     where
-        T: Parse,
+        T: ParseYaml,
 {
     type DataError = T::DataError;
 
@@ -136,7 +137,7 @@ impl<T> Parse for Option<T>
     }
 }
 
-impl Parse for f32 {
+impl ParseYaml for f32 {
     type DataError = ();
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
@@ -148,7 +149,7 @@ impl Parse for f32 {
     }
 }
 
-impl Parse for f64 {
+impl ParseYaml for f64 {
     type DataError = ();
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
@@ -162,7 +163,7 @@ impl Parse for f64 {
 
 macro_rules! impl_int {
     ($($t:ty)*) => {
-        $(impl Parse for $t {
+        $(impl ParseYaml for $t {
             type DataError = ();
 
             fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
@@ -176,7 +177,7 @@ macro_rules! impl_int {
 }
 impl_int!(u8 i8 u16 i16 u32 i32 u64 i64 isize usize);
 
-impl Parse for String {
+impl ParseYaml for String {
     type DataError = ();
 
     fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
