@@ -37,6 +37,21 @@ impl<T> Resource<T> {
             T: Load<Loader=()>,
     { self.load_with(file, &mut ()) }
 
+    pub fn receive_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<&T, T::Error>
+        where
+            S: Into<String>,
+            T: Load,
+    {
+        let idx = self.load_with(file, loader)?;
+        Ok(self.get(idx).unwrap())
+    }
+
+    pub fn receive<S>(&mut self, file: S) -> Result<&T, T::Error>
+        where
+            S: Into<String>,
+            T: Load<Loader=()>,
+    { self.receive_with(file, &mut ()) }
+
     pub fn get<B>(&self, by: B) -> Option<&T>
         where
             Self: Get<B, Item=T>,
@@ -204,10 +219,7 @@ mod tests {
                 .unwrap_or_default()
                 .to_string_lossy()
                 .split_whitespace()
-                .map(|s| {
-                    let n = loader.load(s).unwrap();
-                    Rc::clone(loader.get(n).unwrap())
-                })
+                .map(|s| Rc::clone(loader.receive(s).unwrap()))
                 .collect();
 
             Ok(TileSet { tiles })
