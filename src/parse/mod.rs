@@ -6,19 +6,19 @@ pub mod state;
 pub mod tile;
 
 #[derive(Debug)]
-pub enum ParseError<E> {
+pub enum YamlError<E> {
     IOError(std::io::Error),
     ScanError(yaml::ScanError),
     FormatError,
     DataError(E),
 }
 
-impl<E> From<std::io::Error> for ParseError<E> {
-    fn from(err: std::io::Error) -> Self { ParseError::IOError(err) }
+impl<E> From<std::io::Error> for YamlError<E> {
+    fn from(err: std::io::Error) -> Self { YamlError::IOError(err) }
 }
 
-impl<E> From<yaml::ScanError> for ParseError<E> {
-    fn from(err: yaml::ScanError) -> Self { ParseError::ScanError(err) }
+impl<E> From<yaml::ScanError> for YamlError<E> {
+    fn from(err: yaml::ScanError) -> Self { YamlError::ScanError(err) }
 }
 
 pub trait Parse
@@ -40,26 +40,38 @@ pub fn parse_default<T>(yml: &yaml::Yaml) -> T
         T: Parse + Default,
 { parse(yml).unwrap_or_default() }
 
-pub fn parse_code<T, S>(code: S) -> Result<T, ParseError<T::DataError>>
+pub fn parse_code<T, S>(code: S) -> Result<T, YamlError<T::DataError>>
     where
         T: Parse,
         S: AsRef<str>,
 {
     let ls = yaml::YamlLoader::load_from_str(code.as_ref())?;
 
-    if ls.len() != 1 { Err(ParseError::FormatError)? }
+    if ls.len() != 1 { Err(YamlError::FormatError)? }
 
     let yml = ls.into_iter().next().unwrap();
-    parse(&yml).map_err(|err| ParseError::DataError(err))
+    parse(&yml).map_err(|err| YamlError::DataError(err))
 }
 
-pub fn parse_file<T, P>(path: P) -> Result<T, ParseError<T::DataError>>
+pub fn parse_file<T, P>(path: P) -> Result<T, YamlError<T::DataError>>
     where
         T: Parse,
         P: AsRef<std::path::Path>,
 {
     let code = std::fs::read_to_string(path)?;
     parse_code(code)
+}
+
+pub fn load_yaml<P, E>(file: P) -> Result<yaml::Yaml, YamlError<E>>
+    where
+        P: AsRef<std::path::Path>,
+{
+    let code = std::fs::read_to_string(file)?;
+    let ls = yaml::YamlLoader::load_from_str(&*code)?;
+
+    if ls.len() != 1 { Err(YamlError::FormatError)? }
+
+    ls.into_iter().next().ok_or(YamlError::FormatError)
 }
 
 #[derive(Debug)]

@@ -1,19 +1,19 @@
 use super::{
     model::ModelError,
     shell_transform::Shell,
-    parse::ParseError,
+    parse::YamlError,
 };
 
 #[derive(Debug)]
 pub enum StateError {
-    ModelParseError(ParseError<ModelError>),
+    ModelParseError(YamlError<ModelError>),
     TransformError,
     NoLayerDefined,
     NoModelDefined,
 }
 
-impl From<ParseError<ModelError>> for StateError {
-    fn from(err: ParseError<ModelError>) -> Self { StateError::ModelParseError(err) }
+impl From<YamlError<ModelError>> for StateError {
+    fn from(err: YamlError<ModelError>) -> Self { StateError::ModelParseError(err) }
 }
 
 #[derive(Debug)]

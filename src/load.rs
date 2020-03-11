@@ -1,6 +1,6 @@
 use crate::parse::{
     Parse,
-    ParseError,
+    YamlError,
     parse_file,
 };
 
@@ -24,7 +24,7 @@ impl<T> Load for T
     where
         T: LoadDir + Parse,
 {
-    type Error = ParseError<T::DataError>;
+    type Error = YamlError<T::DataError>;
     type Loader = ();
 
     fn load<P>(file: P, _: &mut ()) -> Result<Self, Self::Error>

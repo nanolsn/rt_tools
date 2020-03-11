@@ -3,19 +3,17 @@ use super::{
     load::{LoadDir, Load},
     resource::Resource,
     model::Model,
-    parse::tile::yaml_to_tile,
+    parse::{
+        tile::yaml_to_tile,
+        YamlError,
+        load_yaml,
+    },
 };
 
 #[derive(Debug)]
 pub enum TileError {
-    ScanError(yaml::ScanError),
-    FormatError,
     StateError(StateError),
     NoStates,
-}
-
-impl From<yaml::ScanError> for TileError {
-    fn from(err: yaml::ScanError) -> Self { TileError::ScanError(err) }
 }
 
 impl From<StateError> for TileError {
@@ -37,7 +35,7 @@ impl LoadDir for Tile {
 }
 
 impl Load for Tile {
-    type Error = TileError;
+    type Error = YamlError<TileError>;
     type Loader = Resource<Model>;
 
     fn load<P>(file: P, loader: &mut Self::Loader) -> Result<Self, Self::Error>
@@ -45,12 +43,11 @@ impl Load for Tile {
             P: AsRef<std::path::Path>,
             Self: Sized,
     {
-        let path = file.as_ref().to_string_lossy();
-        let ls = yaml::YamlLoader::load_from_str(path.as_ref())?;
+        let yml = load_yaml(file)?;
 
-        if ls.len() != 1 { Err(TileError::FormatError)? }
+        let res = yaml_to_tile(&yml, loader)
+            .map_err(|e| YamlError::DataError(e))?;
 
-        let yml = ls.into_iter().next().unwrap();
-        Ok(yaml_to_tile(&yml, loader)?)
+        Ok(res)
     }
 }
