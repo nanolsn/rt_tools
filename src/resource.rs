@@ -121,6 +121,7 @@ impl<T> Into<Vec<T>> for Resource<T> {
 mod tests {
     use super::*;
     use super::super::load::{Load, LoadDir};
+    use std::rc::Rc;
 
     #[derive(Debug)]
     struct Tile {
@@ -153,26 +154,26 @@ mod tests {
     #[test]
     fn load() {
         let mut res: Resource<Tile> = Resource::new();
-        res.load("one.tl").unwrap();
-        res.load("two.tl").unwrap();
-        res.load("two.tl").unwrap();
-        res.load("one.tl").unwrap();
-        res.load("one.tl").unwrap();
-        res.load("three.tl").unwrap();
+        res.load("one").unwrap();
+        res.load("two").unwrap();
+        res.load("two").unwrap();
+        res.load("one").unwrap();
+        res.load("one").unwrap();
+        res.load("three").unwrap();
 
-        assert_eq!(res.get(0).unwrap().name, "one.tl");
-        assert_eq!(res.get(1).unwrap().name, "two.tl");
-        assert_eq!(res.get(2).unwrap().name, "three.tl");
+        assert_eq!(res.get(0).unwrap().name, "one");
+        assert_eq!(res.get(1).unwrap().name, "two");
+        assert_eq!(res.get(2).unwrap().name, "three");
         assert!(res.get(3).is_none());
 
-        assert_eq!(res.get("one.tl").unwrap().name, "one.tl");
-        assert_eq!(res.get("two.tl").unwrap().name, "two.tl");
-        assert_eq!(res.get("three.tl").unwrap().name, "three.tl");
-        assert!(res.get("four.tl").is_none());
+        assert_eq!(res.get("one").unwrap().name, "one");
+        assert_eq!(res.get("two").unwrap().name, "two");
+        assert_eq!(res.get("three").unwrap().name, "three");
+        assert!(res.get("four").is_none());
 
         assert_eq!(res.len(), 3);
 
-        let files = ["one.tl", "two.tl", "three.tl"];
+        let files = ["one", "two", "three"];
         assert!(
             res
                 .iter()
@@ -182,7 +183,7 @@ mod tests {
 
     #[derive(Debug)]
     struct TileSet {
-        tiles: Vec<usize>,
+        tiles: Vec<Rc<Tile>>,
     }
 
     impl LoadDir for TileSet {
@@ -191,7 +192,7 @@ mod tests {
 
     impl Load for TileSet {
         type Error = ();
-        type Loader = Resource<Tile>;
+        type Loader = Resource<Rc<Tile>>;
 
         fn load<P>(file: P, loader: &mut Self::Loader) -> Result<Self, Self::Error>
             where
@@ -203,10 +204,39 @@ mod tests {
                 .unwrap_or_default()
                 .to_string_lossy()
                 .split_whitespace()
-                .map(|s| loader.load(s).unwrap())
+                .map(|s| {
+                    let n = loader.load(s).unwrap();
+                    Rc::clone(loader.get(n).unwrap())
+                })
                 .collect();
 
             Ok(TileSet { tiles })
         }
+    }
+
+    #[test]
+    fn load_with() {
+        let mut res: Resource<Rc<Tile>> = Resource::new();
+
+        let ts: TileSet = load_data_with("one two", &mut res).unwrap();
+        assert_eq!(res.items[0].name, "one");
+        assert_eq!(res.items[1].name, "two");
+        assert!(ts
+            .tiles
+            .iter()
+            .zip(["one", "two"].iter())
+            .all(|(a, &b)| a.name.as_str() == b)
+        );
+
+        let ts: TileSet = load_data_with("three one two", &mut res).unwrap();
+        assert_eq!(res.items[0].name, "one");
+        assert_eq!(res.items[1].name, "two");
+        assert_eq!(res.items[2].name, "three");
+        assert!(ts
+            .tiles
+            .iter()
+            .zip(["three", "one", "two"].iter())
+            .all(|(a, &b)| a.name.as_str() == b)
+        );
     }
 }
