@@ -11,15 +11,13 @@ pub struct Resource<T> {
     files: HashMap<String, usize>,
 }
 
-impl<T> Resource<T>
-    where
-        T: Load,
-{
+impl<T> Resource<T> {
     pub fn new() -> Self { Resource::default() }
 
     pub fn load_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<usize, T::Error>
         where
             S: Into<String>,
+            T: Load,
     {
         match self.files.entry(file.into()) {
             Entry::Occupied(en) => Ok(*en.get()),
@@ -32,6 +30,12 @@ impl<T> Resource<T>
             }
         }
     }
+
+    pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
+        where
+            S: Into<String>,
+            T: Load<Loader=()>,
+    { self.load_with(file, &mut ()) }
 
     pub fn get<B>(&self, by: B) -> Option<&T>
         where
@@ -48,16 +52,6 @@ impl<T> Resource<T>
     pub fn iter(&self) -> std::slice::Iter<T> { self.items.iter() }
     pub fn iter_mut(&mut self) -> std::slice::IterMut<T> { self.items.iter_mut() }
     pub fn into_iter(self) -> std::vec::IntoIter<T> { self.items.into_iter() }
-}
-
-impl<T> Resource<T>
-    where
-        T: Load<Loader=()>,
-{
-    pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
-        where
-            S: Into<String>,
-    { self.load_with(file, &mut ()) }
 }
 
 impl<T> Get<usize> for Resource<T> {
@@ -144,7 +138,6 @@ mod tests {
         fn load<P>(file: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
             where
                 P: AsRef<std::path::Path>,
-                Self: Sized,
         {
             Ok(Tile {
                 name: file
@@ -185,5 +178,35 @@ mod tests {
                 .iter()
                 .all(|t| files.contains(&t.name.as_str()))
         );
+    }
+
+    #[derive(Debug)]
+    struct TileSet {
+        tiles: Vec<usize>,
+    }
+
+    impl LoadDir for TileSet {
+        const DIR: &'static str = "tile_sets";
+    }
+
+    impl Load for TileSet {
+        type Error = ();
+        type Loader = Resource<Tile>;
+
+        fn load<P>(file: P, loader: &mut Self::Loader) -> Result<Self, Self::Error>
+            where
+                P: AsRef<std::path::Path>,
+        {
+            let tiles = file
+                .as_ref()
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .split_whitespace()
+                .map(|s| loader.load(s).unwrap())
+                .collect();
+
+            Ok(TileSet { tiles })
+        }
     }
 }
