@@ -1,6 +1,7 @@
 use super::{
     load::{Load, LoadDir},
     resource::Resource,
+    sprite_map::SpriteMap,
 };
 
 #[derive(Debug)]
@@ -38,8 +39,6 @@ impl Load for TexturePath {
     }
 }
 
-type AtlasResult = Result<image::DynamicImage, AtlasError>;
-
 #[derive(Debug)]
 pub struct Atlas {
     images: Resource<TexturePath>,
@@ -59,18 +58,18 @@ impl Atlas {
             S: Into<String>,
     { self.images.load(file).ok() }
 
-    pub fn stitch_sprites(self) -> AtlasResult { self.stitch(image::open) }
+    pub fn stitch_sprites(self) -> Result<SpriteMap, AtlasError> { self.stitch(image::open) }
 
-    pub fn stitch<F>(self, mut f: F) -> AtlasResult
+    pub fn stitch<F>(self, mut f: F) -> Result<SpriteMap, AtlasError>
         where
             F: FnMut(String) -> image::ImageResult<image::DynamicImage>,
     {
         use image::{GenericImage, GenericImageView};
 
         let Atlas { images, size } = self;
-        let sprites_side = (images.len() as f32).sqrt().ceil() as u32;
-        let map_size = sprites_side * size;
-        let mut map = image::DynamicImage::new_rgba8(map_size, map_size);
+        let map_size = (images.len() as f32).sqrt().ceil() as u32;
+        let pixel_size = map_size * size;
+        let mut map = image::DynamicImage::new_rgba8(pixel_size, pixel_size);
 
         let it = images
             .into_iter()
@@ -86,12 +85,12 @@ impl Atlas {
 
         for (i, res) in it.enumerate() {
             let img = res?;
-            let x = (i as u32 % sprites_side) * size;
-            let y = (i as u32 / sprites_side) * size;
+            let x = (i as u32 % map_size) * size;
+            let y = (i as u32 / map_size) * size;
             map.copy_from(&img, x, y)?;
         }
 
-        Ok(map)
+        Ok(SpriteMap::new(map, map_size))
     }
 }
 
@@ -136,9 +135,11 @@ mod tests {
         atlas.add("blue");
         atlas.add("white");
 
-        let img = atlas
+        let map = atlas
             .stitch(make_texture)
             .unwrap();
+
+        let img = map.map();
 
         assert_eq!(img.get_pixel(0, 0), image::Rgba(RED));
         assert_eq!(img.get_pixel(SIZE - 1, SIZE - 1), image::Rgba(RED));
