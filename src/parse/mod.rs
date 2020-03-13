@@ -5,6 +5,16 @@ pub mod sides;
 pub mod state;
 pub mod tile;
 
+pub trait Parse {
+    type Error;
+    type Loader;
+
+    fn parse<S>(code: S, loader: &mut Self::Loader) -> Result<Self, Self::Error>
+        where
+            S: AsRef<str>,
+            Self: Sized;
+}
+
 #[derive(Debug)]
 pub enum YamlError<E> {
     IOError(std::io::Error),

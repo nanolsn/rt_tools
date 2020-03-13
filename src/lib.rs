@@ -1,5 +1,5 @@
 pub mod parse;
-pub mod scheme;
+mod scheme;
 
 pub mod atlas;
 pub mod axis;

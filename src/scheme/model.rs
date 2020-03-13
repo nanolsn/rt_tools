@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 #[derive(Debug, PartialEq, Deserialize)]
-pub(super) struct Model {
+pub(crate) struct Model {
     pos: Option<Vec<[f32; 3]>>,
     st: Option<Vec<[f32; 2]>>,
     norm: Option<Vec<[f32; 3]>>,
@@ -10,7 +10,7 @@ pub(super) struct Model {
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
-pub(super) struct Face {
+pub(crate) struct Face {
     pos: Option<Vec<[f32; 3]>>,
     st: Option<Vec<[f32; 2]>>,
     norm: Option<[f32; 3]>,
@@ -20,7 +20,7 @@ pub(super) struct Face {
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
-pub(super) struct Data {
+pub(crate) struct Data {
     pos: Option<Vec<u32>>,
     st: Option<Vec<u32>>,
     norm: Option<u32>,
