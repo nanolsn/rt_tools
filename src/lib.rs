@@ -1,4 +1,6 @@
 pub mod parse;
+pub mod scheme;
+
 pub mod atlas;
 pub mod axis;
 pub mod face;

@@ -2,7 +2,7 @@ use super::{
     face::{Face, FaceError},
     sides::Sides,
     vertex::Vertex,
-    parse::{ParseYaml, model::yaml_to_model, parse_file, YamlError},
+    parse::{ParseYaml, model::yaml_to_model, parse_file, YamlError, VecError},
     load::Load,
 };
 
@@ -10,10 +10,25 @@ use super::{
 pub enum ModelError {
     FacesError,
     FaceError(FaceError),
+    VecError(VecError),
+    ArrayError,
 }
 
 impl From<FaceError> for ModelError {
     fn from(err: FaceError) -> Self { ModelError::FaceError(err) }
+}
+
+impl From<VecError> for ModelError {
+    fn from(err: VecError) -> Self { ModelError::VecError(err) }
+}
+
+impl From<Option<VecError>> for ModelError {
+    fn from(err: Option<VecError>) -> Self {
+        match err {
+            None => ModelError::ArrayError,
+            Some(ve) => ModelError::VecError(ve),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
