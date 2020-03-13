@@ -2,8 +2,8 @@ use super::{
     face::{Face, FaceError},
     sides::Sides,
     vertex::Vertex,
-    parse::{ParseYaml, model::yaml_to_model},
-    load::LoadDir,
+    parse::{ParseYaml, model::yaml_to_model, parse_file, YamlError},
+    load::{LoadDir, Load},
 };
 
 #[derive(Debug)]
@@ -44,4 +44,15 @@ impl ParseYaml for Model {
 
 impl LoadDir for Model {
     const DIR: &'static str = "models";
+}
+
+impl Load for Model {
+    type Error = YamlError<ModelError>;
+    type Loader = ();
+
+    fn load<P>(file: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
+        where
+            P: AsRef<std::path::Path>,
+            Self: Sized,
+    { parse_file(file) }
 }

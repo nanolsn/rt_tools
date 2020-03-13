@@ -1,9 +1,3 @@
-use crate::parse::{
-    ParseYaml,
-    YamlError,
-    parse_file,
-};
-
 pub const DATA_PATH: &str = "data";
 
 pub trait LoadDir {
@@ -18,20 +12,6 @@ pub trait Load: LoadDir {
         where
             P: AsRef<std::path::Path>,
             Self: Sized;
-}
-
-impl<T> Load for T
-    where
-        T: LoadDir + ParseYaml,
-{
-    type Error = YamlError<T::DataError>;
-    type Loader = ();
-
-    fn load<P>(file: P, _: &mut ()) -> Result<Self, Self::Error>
-        where
-            P: AsRef<std::path::Path>,
-            Self: Sized,
-    { parse_file(file) }
 }
 
 use std::rc::Rc;
