@@ -2,7 +2,7 @@ use std::collections::{hash_map::Entry, HashMap};
 
 use super::{
     get::{Get, GetMut},
-    load::{load_data_with, Load, LoadDir},
+    load::{load_data_with, Load},
 };
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ impl<T> Resource<T> {
     pub fn load_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<usize, T::Error>
         where
             S: Into<String>,
-            T: Load + LoadDir,
+            T: Load,
     {
         match self.files.entry(file.into()) {
             Entry::Occupied(en) => Ok(*en.get()),
@@ -34,13 +34,13 @@ impl<T> Resource<T> {
     pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
         where
             S: Into<String>,
-            T: Load<Loader=()> + LoadDir,
+            T: Load<Loader=()>,
     { self.load_with(file, &mut ()) }
 
     pub fn receive_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<&T, T::Error>
         where
             S: Into<String>,
-            T: Load + LoadDir,
+            T: Load,
     {
         let idx = self.load_with(file, loader)?;
         Ok(self.get(idx).unwrap())
@@ -49,7 +49,7 @@ impl<T> Resource<T> {
     pub fn receive<S>(&mut self, file: S) -> Result<&T, T::Error>
         where
             S: Into<String>,
-            T: Load<Loader=()> + LoadDir,
+            T: Load<Loader=()>,
     { self.receive_with(file, &mut ()) }
 
     pub fn get<B>(&self, by: B) -> Option<&T>
@@ -135,7 +135,7 @@ impl<T> Into<Vec<T>> for Resource<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::load::{Load, LoadDir};
+    use super::super::load::Load;
     use std::rc::Rc;
 
     #[derive(Debug)]
@@ -143,11 +143,9 @@ mod tests {
         name: String,
     }
 
-    impl LoadDir for Tile {
-        const DIR: &'static str = "tiles";
-    }
-
     impl Load for Tile {
+        const DIR: &'static str = "tiles";
+
         type Error = ();
         type Loader = ();
 
@@ -201,11 +199,9 @@ mod tests {
         tiles: Vec<Rc<Tile>>,
     }
 
-    impl LoadDir for TileSet {
-        const DIR: &'static str = "tile_sets";
-    }
-
     impl Load for TileSet {
+        const DIR: &'static str = "tile_sets";
+
         type Error = ();
         type Loader = Resource<Rc<Tile>>;
 

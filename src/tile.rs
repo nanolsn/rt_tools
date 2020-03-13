@@ -1,6 +1,6 @@
 use super::{
     state::{State, StateError},
-    load::{LoadDir, Load},
+    load::Load,
     resource::Resource,
     model::Model,
     parse::{
@@ -30,11 +30,9 @@ impl Tile {
     pub fn detect_state(&self) -> &State { &self.states[0] }
 }
 
-impl LoadDir for Tile {
-    const DIR: &'static str = "tiles";
-}
-
 impl Load for Tile {
+    const DIR: &'static str = "tiles";
+
     type Error = YamlError<TileError>;
     type Loader = Resource<Model>;
 

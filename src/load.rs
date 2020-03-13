@@ -1,10 +1,8 @@
 pub const DATA_PATH: &str = "data";
 
-pub trait LoadDir {
-    const DIR: &'static str;
-}
-
 pub trait Load {
+    const DIR: &'static str;
+
     type Error;
     type Loader;
 
@@ -16,17 +14,12 @@ pub trait Load {
 
 use std::rc::Rc;
 
-impl<T> LoadDir for Rc<T>
-    where
-        T: LoadDir,
-{
-    const DIR: &'static str = T::DIR;
-}
-
 impl<T> Load for Rc<T>
     where
         T: Load,
 {
+    const DIR: &'static str = T::DIR;
+
     type Error = T::Error;
     type Loader = T::Loader;
 
@@ -39,7 +32,7 @@ impl<T> Load for Rc<T>
 
 pub fn load_data_with<T, P>(file: P, loader: &mut T::Loader) -> Result<T, T::Error>
     where
-        T: Load + LoadDir,
+        T: Load,
         P: AsRef<std::path::Path>,
 {
     let path = std::path::Path::new(DATA_PATH)
@@ -51,6 +44,6 @@ pub fn load_data_with<T, P>(file: P, loader: &mut T::Loader) -> Result<T, T::Err
 
 pub fn load_data<T, P>(file: P) -> Result<T, T::Error>
     where
-        T: Load<Loader=()> + LoadDir,
+        T: Load<Loader=()>,
         P: AsRef<std::path::Path>,
 { load_data_with(file, &mut ()) }
