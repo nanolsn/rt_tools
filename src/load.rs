@@ -4,7 +4,7 @@ pub trait LoadDir {
     const DIR: &'static str;
 }
 
-pub trait Load: LoadDir {
+pub trait Load {
     type Error;
     type Loader;
 
@@ -39,7 +39,7 @@ impl<T> Load for Rc<T>
 
 pub fn load_data_with<T, P>(file: P, loader: &mut T::Loader) -> Result<T, T::Error>
     where
-        T: Load,
+        T: Load + LoadDir,
         P: AsRef<std::path::Path>,
 {
     let path = std::path::Path::new(DATA_PATH)
@@ -51,6 +51,6 @@ pub fn load_data_with<T, P>(file: P, loader: &mut T::Loader) -> Result<T, T::Err
 
 pub fn load_data<T, P>(file: P) -> Result<T, T::Error>
     where
-        T: Load<Loader=()>,
+        T: Load<Loader=()> + LoadDir,
         P: AsRef<std::path::Path>,
 { load_data_with(file, &mut ()) }

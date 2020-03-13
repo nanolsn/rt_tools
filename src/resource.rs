@@ -2,7 +2,7 @@ use std::collections::{hash_map::Entry, HashMap};
 
 use super::{
     get::{Get, GetMut},
-    load::{load_data_with, Load},
+    load::{load_data_with, Load, LoadDir},
 };
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ impl<T> Resource<T> {
     pub fn load_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<usize, T::Error>
         where
             S: Into<String>,
-            T: Load,
+            T: Load + LoadDir,
     {
         match self.files.entry(file.into()) {
             Entry::Occupied(en) => Ok(*en.get()),
@@ -34,13 +34,13 @@ impl<T> Resource<T> {
     pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
         where
             S: Into<String>,
-            T: Load<Loader=()>,
+            T: Load<Loader=()> + LoadDir,
     { self.load_with(file, &mut ()) }
 
     pub fn receive_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<&T, T::Error>
         where
             S: Into<String>,
-            T: Load,
+            T: Load + LoadDir,
     {
         let idx = self.load_with(file, loader)?;
         Ok(self.get(idx).unwrap())
@@ -49,7 +49,7 @@ impl<T> Resource<T> {
     pub fn receive<S>(&mut self, file: S) -> Result<&T, T::Error>
         where
             S: Into<String>,
-            T: Load<Loader=()>,
+            T: Load<Loader=()> + LoadDir,
     { self.receive_with(file, &mut ()) }
 
     pub fn get<B>(&self, by: B) -> Option<&T>
