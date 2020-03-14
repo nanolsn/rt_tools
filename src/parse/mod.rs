@@ -85,7 +85,7 @@ pub fn load_yaml_code<S, E>(code: S) -> Result<yaml::Yaml, YamlError<E>>
     ls.into_iter().next().ok_or(YamlError::FormatError)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum VecError {
     Vec4,
     Vec3,

@@ -5,12 +5,15 @@ use super::{
     vertex::Vertex,
     parse::{ParseYaml, VecError, face::yaml_to_face},
 };
+use std::iter::FromIterator;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum FaceError {
     IncorrectVertexNumber,
     VecError(VecError),
     ArrayError,
+    OutOfRange,
+    IncorrectDataFormat,
 }
 
 impl From<VecError> for FaceError {
@@ -41,6 +44,24 @@ impl TryFrom<&[Vertex]> for FaceVertexes {
             4 => FaceVertexes::Square([vs[0], vs[1], vs[2], vs[3]]),
             _ => Err(FaceError::IncorrectVertexNumber)?,
         })
+    }
+}
+
+impl FromIterator<Vertex> for Option<FaceVertexes> {
+    fn from_iter<T>(iter: T) -> Self
+        where
+            T: IntoIterator<Item=Vertex>,
+    {
+        let mut it = iter.into_iter();
+        let v1 = it.next()?;
+        let v2 = it.next()?;
+        let v3 = it.next()?;
+
+        if let Some(v4) = it.next() {
+            Some(FaceVertexes::Square([v1, v2, v3, v4]))
+        } else {
+            Some(FaceVertexes::Triangle([v1, v2, v3]))
+        }
     }
 }
 

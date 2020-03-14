@@ -6,7 +6,7 @@ use super::{
     load::Load,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum ModelError {
     FacesError,
     FaceError(FaceError),
