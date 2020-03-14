@@ -26,11 +26,13 @@ pub(crate) struct Data {
     norm: Option<u32>,
 }
 
-use crate::model as md;
-use crate::face as fc;
-use crate::vertex::Vertex;
+use crate::{
+    model as md,
+    face as fc,
+    vertex::Vertex,
+};
 
-pub(crate) fn convert(src: Model) -> Result<md::Model, md::ModelError> {
+fn convert(src: Model) -> Result<md::Model, md::ModelError> {
     let pos = src.pos.unwrap_or_default();
     let st = src.st.unwrap_or_default();
     let norm = src.norm.unwrap_or_default();

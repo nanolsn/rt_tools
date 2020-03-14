@@ -14,6 +14,76 @@ pub(crate) struct State {
     transform: Option<Vec<String>>,
 }
 
+use crate::{
+    tile as tl,
+    state as st,
+    shell_transform::{Shell, ShellTransformAction, apply_actions},
+};
+
+// TODO: Make Resource<Model> loader instead
+pub struct Loader;
+
+impl Loader {
+    pub fn load(&self, _: &str) -> usize { 0 }
+}
+
+fn convert(src: Tile, loader: Loader) -> Result<tl::Tile, tl::TileError> {
+    let models = src.models.unwrap_or_default();
+    let textures = src.textures.unwrap_or_default();
+    let states = src.states.unwrap_or_default();
+
+    let convert_state = |state: State| {
+        Ok(st::State {
+            model: {
+                let model = state.model.ok_or(st::StateError::NoModelDefined)?;
+
+                let model_file = models.get(model as usize)
+                    .ok_or(st::StateError::OutOfRange)?;
+
+                loader.load(&*model_file)
+            },
+
+            shell: {
+                let actions_result: Result<Vec<ShellTransformAction>, st::StateError> = state
+                    .transform
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|s| {
+                        use std::convert::TryFrom;
+
+                        ShellTransformAction::try_from(&*s)
+                            .map_err(|_| st::StateError::TransformError)
+                    })
+                    .collect();
+
+                *apply_actions(&mut Shell::new(), actions_result?)
+            },
+
+            layers: {
+                let layers = state.layers.ok_or(st::StateError::NoLayerDefined)?;
+
+                if layers.iter().any(|&l| l as usize >= textures.len()) {
+                    Err(st::StateError::OutOfRange)?
+                }
+
+                // TODO: Load textures
+
+                layers
+            },
+        })
+    };
+
+    let states_result: Result<Vec<st::State>, st::StateError> = states
+        .into_iter()
+        .map(convert_state)
+        .collect();
+
+    Ok(tl::Tile {
+        states: states_result?,
+        id: 0,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

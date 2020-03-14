@@ -10,6 +10,7 @@ pub enum StateError {
     TransformError,
     NoLayerDefined,
     NoModelDefined,
+    OutOfRange,
 }
 
 impl From<YamlError<ModelError>> for StateError {
