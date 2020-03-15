@@ -7,5 +7,5 @@ pub trait ConvertFrom<T, L>
 {
     type Error;
 
-    fn convert(from: T, loader: &mut L) -> Result<Self, Self::Error>;
+    fn convert(from: T, loader: L) -> Result<Self, Self::Error>;
 }

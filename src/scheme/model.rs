@@ -104,9 +104,7 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
 impl super::ConvertFrom<Model, ()> for md::Model {
     type Error = md::ModelError;
 
-    fn convert(from: Model, _: &mut ()) -> Result<Self, Self::Error> {
-        convert(from)
-    }
+    fn convert(from: Model, _: ()) -> Result<Self, Self::Error> { convert(from) }
 }
 
 #[cfg(test)]

@@ -100,7 +100,7 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
     })
 }
 
-impl<M, T> super::ConvertFrom<Tile, TileLoaders<M, T>> for tl::Tile
+impl<M, T> super::ConvertFrom<Tile, &mut TileLoaders<M, T>> for tl::Tile
     where
         M: Load<Loader=()>,
         T: Load<Loader=()>,
