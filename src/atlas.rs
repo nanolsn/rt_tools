@@ -26,18 +26,10 @@ impl Load for TexturePath {
     type Error = ();
     type Loader = ();
 
-    fn load<P>(file: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
+    fn load<S>(file: S, _: &mut Self::Loader) -> Result<Self, Self::Error>
         where
-            P: AsRef<std::path::Path>,
-            Self: Sized,
-    {
-        Ok(TexturePath(
-            file
-                .as_ref()
-                .to_string_lossy()
-                .into()
-        ))
-    }
+            S: AsRef<str>,
+    { Ok(TexturePath(file.as_ref().into())) }
 }
 
 #[derive(Debug)]
@@ -57,7 +49,7 @@ impl Atlas {
     pub fn add<S>(&mut self, file: S) -> Option<usize>
         where
             S: Into<String>,
-    { self.images.load(file).ok() }
+    { self.images.load(file).map(|(idx, _)| idx).ok() }
 
     pub fn stitch_sprites(self) -> Result<SpriteMap, AtlasError> { self.stitch(image::open) }
 

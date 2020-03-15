@@ -2,8 +2,11 @@ use std::collections::{hash_map::Entry, HashMap};
 
 use super::{
     get::{Get, GetMut},
-    asset::{load_asset_with, Asset},
+    load::Load,
+    asset::Asset,
 };
+
+type LoadResult<'a, T, E> = Result<(usize, &'a T), E>;
 
 #[derive(Debug)]
 pub struct Resource<T> {
@@ -14,43 +17,42 @@ pub struct Resource<T> {
 impl<T> Resource<T> {
     pub fn new() -> Self { Resource::default() }
 
-    pub fn load_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<usize, T::Error>
+    pub fn load_with<S>(&mut self, file: S, loader: &mut T::Loader) -> LoadResult<T, T::Error>
         where
             S: Into<String>,
-            T: Asset,
+            T: Load,
     {
-        match self.files.entry(file.into()) {
-            Entry::Occupied(en) => Ok(*en.get()),
+        let idx = match self.files.entry(file.into()) {
+            Entry::Occupied(en) => *en.get(),
             Entry::Vacant(en) => {
-                let item = load_asset_with(en.key(), loader)?;
+                let item = T::load(en.key(), loader)?;
                 let id = self.items.len();
 
                 self.items.push(item);
-                Ok(*en.insert(id))
+                *en.insert(id)
             }
-        }
+        };
+
+        Ok((idx, &self.items[idx]))
     }
 
-    pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
+    pub fn load<S>(&mut self, file: S) -> LoadResult<T, T::Error>
         where
             S: Into<String>,
-            T: Asset<Loader=()>,
+            T: Load<Loader=()>,
     { self.load_with(file, &mut ()) }
 
-    pub fn receive_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<&T, T::Error>
+    pub fn load_asset_with<S>(&mut self, file: S, loader: &mut T::Loader) -> LoadResult<T, T::Error>
         where
-            S: Into<String>,
+            S: AsRef<str>,
             T: Asset,
-    {
-        let idx = self.load_with(file, loader)?;
-        Ok(self.get(idx).unwrap())
-    }
+    { self.load_with(T::full_path(file), loader) }
 
-    pub fn receive<S>(&mut self, file: S) -> Result<&T, T::Error>
+    pub fn load_asset<S>(&mut self, file: S) -> LoadResult<T, T::Error>
         where
-            S: Into<String>,
+            S: AsRef<str>,
             T: Asset<Loader=()>,
-    { self.receive_with(file, &mut ()) }
+    { self.load_asset_with(file, &mut ()) }
 
     pub fn get<B>(&self, by: B) -> Option<&T>
         where
@@ -135,35 +137,19 @@ impl<T> Into<Vec<T>> for Resource<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::load::Load;
     use std::rc::Rc;
 
     #[derive(Debug)]
-    struct Tile {
-        name: String,
-    }
-
-    impl Asset for Tile {
-        const DIR: &'static str = "tiles";
-    }
+    struct Tile(String);
 
     impl Load for Tile {
         type Error = ();
         type Loader = ();
 
-        fn load<P>(file: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
+        fn load<S>(file: S, _: &mut Self::Loader) -> Result<Self, Self::Error>
             where
-                P: AsRef<std::path::Path>,
-        {
-            Ok(Tile {
-                name: file
-                    .as_ref()
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .into()
-            })
-        }
+                S: AsRef<str>,
+        { Ok(Tile(file.as_ref().into())) }
     }
 
     #[test]
@@ -176,14 +162,14 @@ mod tests {
         res.load("one").unwrap();
         res.load("three").unwrap();
 
-        assert_eq!(res.get(0).unwrap().name, "one");
-        assert_eq!(res.get(1).unwrap().name, "two");
-        assert_eq!(res.get(2).unwrap().name, "three");
+        assert_eq!(res.get(0).unwrap().0, "one");
+        assert_eq!(res.get(1).unwrap().0, "two");
+        assert_eq!(res.get(2).unwrap().0, "three");
         assert!(res.get(3).is_none());
 
-        assert_eq!(res.get("one").unwrap().name, "one");
-        assert_eq!(res.get("two").unwrap().name, "two");
-        assert_eq!(res.get("three").unwrap().name, "three");
+        assert_eq!(res.get("one").unwrap().0, "one");
+        assert_eq!(res.get("two").unwrap().0, "two");
+        assert_eq!(res.get("three").unwrap().0, "three");
         assert!(res.get("four").is_none());
 
         assert_eq!(res.len(), 3);
@@ -192,7 +178,7 @@ mod tests {
         assert!(
             res
                 .iter()
-                .all(|t| files.contains(&t.name.as_str()))
+                .all(|t| files.contains(&t.0.as_str()))
         );
     }
 
@@ -201,25 +187,18 @@ mod tests {
         tiles: Vec<Rc<Tile>>,
     }
 
-    impl Asset for TileSet {
-        const DIR: &'static str = "tile_sets";
-    }
-
     impl Load for TileSet {
         type Error = ();
         type Loader = Resource<Rc<Tile>>;
 
-        fn load<P>(file: P, loader: &mut Self::Loader) -> Result<Self, Self::Error>
+        fn load<S>(file: S, loader: &mut Self::Loader) -> Result<Self, Self::Error>
             where
-                P: AsRef<std::path::Path>,
+                S: AsRef<str>,
         {
             let tiles = file
                 .as_ref()
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
                 .split_whitespace()
-                .map(|s| Rc::clone(loader.receive(s).unwrap()))
+                .map(|s| Rc::clone(loader.load(s).unwrap().1))
                 .collect();
 
             Ok(TileSet { tiles })
@@ -227,28 +206,28 @@ mod tests {
     }
 
     #[test]
-    fn load_asset_with() {
+    fn load_with() {
         let mut res: Resource<Rc<Tile>> = Resource::new();
 
-        let ts: TileSet = super::load_asset_with("one two", &mut res).unwrap();
-        assert_eq!(res.items[0].name, "one");
-        assert_eq!(res.items[1].name, "two");
+        let ts: TileSet = TileSet::load("one two", &mut res).unwrap();
+        assert_eq!(res.items[0].0, "one");
+        assert_eq!(res.items[1].0, "two");
         assert!(ts
             .tiles
             .iter()
             .zip(["one", "two"].iter())
-            .all(|(a, &b)| a.name.as_str() == b)
+            .all(|(a, &b)| a.0.as_str() == b)
         );
 
-        let ts: TileSet = super::load_asset_with("three one two", &mut res).unwrap();
-        assert_eq!(res.items[0].name, "one");
-        assert_eq!(res.items[1].name, "two");
-        assert_eq!(res.items[2].name, "three");
+        let ts: TileSet = TileSet::load("three one two", &mut res).unwrap();
+        assert_eq!(res.items[0].0, "one");
+        assert_eq!(res.items[1].0, "two");
+        assert_eq!(res.items[2].0, "three");
         assert!(ts
             .tiles
             .iter()
             .zip(["three", "one", "two"].iter())
-            .all(|(a, &b)| a.name.as_str() == b)
+            .all(|(a, &b)| a.0.as_str() == b)
         );
     }
 }

@@ -1,8 +1,3 @@
-use std::{
-    convert::{TryFrom, TryInto},
-    iter::FromIterator,
-};
-
 use super::{
     sides::Sides,
     vertex::Vertex,
@@ -22,19 +17,7 @@ pub enum FaceVertexes {
     Square([Vertex; 4]),
 }
 
-impl TryFrom<&[Vertex]> for FaceVertexes {
-    type Error = FaceError;
-
-    fn try_from(vs: &[Vertex]) -> Result<Self, Self::Error> {
-        Ok(match vs.len() {
-            3 => FaceVertexes::Triangle([vs[0], vs[1], vs[2]]),
-            4 => FaceVertexes::Square([vs[0], vs[1], vs[2], vs[3]]),
-            _ => Err(FaceError::IncorrectVertexNumber)?,
-        })
-    }
-}
-
-impl FromIterator<Vertex> for Option<FaceVertexes> {
+impl std::iter::FromIterator<Vertex> for Option<FaceVertexes> {
     fn from_iter<T>(iter: T) -> Self
         where
             T: IntoIterator<Item=Vertex>,
@@ -85,12 +68,6 @@ pub struct Face {
     pub vertexes: FaceVertexes,
     pub contact: Sides,
     pub layer: u32,
-}
-
-impl Face {
-    pub fn new(vertexes: &[Vertex], contact: Sides, layer: u32) -> Result<Self, FaceError> {
-        Ok(Face { vertexes: vertexes.try_into()?, contact, layer })
-    }
 }
 
 #[cfg(test)]

@@ -19,7 +19,7 @@ use crate::{
     state as st,
     shell_transform::{Shell, ShellTransformAction, apply_actions},
     resource::Resource,
-    asset::Asset,
+    load::Load,
 };
 
 type TileLoaders<M, T> = (Resource<M>, Resource<T>);
@@ -27,8 +27,8 @@ type TileResult<M, T> = Result<tl::Tile, tl::TileError<M, T>>;
 
 fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Error, T::Error>
     where
-        M: Asset<Loader=()>,
-        T: Asset<Loader=()>,
+        M: Load<Loader=()>,
+        T: Load<Loader=()>,
 {
     let (model_loader, texture_loader) = loaders;
 
@@ -45,7 +45,7 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
                     .ok_or(st::StateError::OutOfRange)?;
 
                 model_loader.load(&*model_file)
-                    .map_err(|e| st::StateError::ModelError(e))?
+                    .map_err(|e| st::StateError::ModelError(e))?.0
             },
 
             shell: {
@@ -80,7 +80,7 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
 
                         texture_loader.load(&*texture_file)
                             .map_err(|e| st::StateError::TextureError(e))
-                            .map(|id| id as u32)
+                            .map(|(id, _)| id as u32)
                     })
                     .collect();
 
@@ -102,8 +102,8 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
 
 impl<M, T> super::ConvertFrom<Tile, &mut TileLoaders<M, T>> for tl::Tile
     where
-        M: Asset<Loader=()>,
-        T: Asset<Loader=()>,
+        M: Load<Loader=()>,
+        T: Load<Loader=()>,
 {
     type Error = tl::TileError<M::Error, T::Error>;
 
@@ -190,15 +190,10 @@ mod tests {
         type Error = ();
         type Loader = ();
 
-        fn load<P>(_: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
+        fn load<S>(_: S, _: &mut Self::Loader) -> Result<Self, Self::Error>
             where
-                P: AsRef<std::path::Path>,
-                Self: Sized,
+                S: AsRef<str>,
         { Ok(Model) }
-    }
-
-    impl Asset for Model {
-        const DIR: &'static str = "models";
     }
 
     struct Texture;
@@ -207,15 +202,10 @@ mod tests {
         type Error = ();
         type Loader = ();
 
-        fn load<P>(_: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
+        fn load<S>(_: S, _: &mut Self::Loader) -> Result<Self, Self::Error>
             where
-                P: AsRef<std::path::Path>,
-                Self: Sized,
+                S: AsRef<str>,
         { Ok(Texture) }
-    }
-
-    impl Asset for Texture {
-        const DIR: &'static str = "textures";
     }
 
     #[test]

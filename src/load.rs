@@ -1,33 +1,37 @@
-pub trait Load {
+pub trait Load
+    where
+        Self: Sized,
+{
     type Error;
     type Loader;
 
-    fn load<P>(file: P, loader: &mut Self::Loader) -> Result<Self, Self::Error>
+    fn load<S>(file: S, loader: &mut Self::Loader) -> Result<Self, Self::Error>
         where
-            P: AsRef<std::path::Path>,
-            Self: Sized;
+            S: AsRef<str>;
 }
 
-use std::rc::Rc;
-use super::asset::Asset;
-
-impl<T> Load for Rc<T>
+impl<T> Load for std::rc::Rc<T>
     where
         T: Load,
 {
     type Error = T::Error;
     type Loader = T::Loader;
 
-    fn load<P>(file: P, loader: &mut Self::Loader) -> Result<Self, Self::Error>
+    fn load<S>(file: S, loader: &mut Self::Loader) -> Result<Self, Self::Error>
         where
-            P: AsRef<std::path::Path>,
-            Self: Sized,
-    { Ok(Rc::new(T::load(file, loader)?)) }
+            S: AsRef<str>,
+    { Ok(std::rc::Rc::new(T::load(file, loader)?)) }
 }
 
-impl<T> Asset for Rc<T>
+impl<T> Load for Box<T>
     where
-        T: Asset,
+        T: Load,
 {
-    const DIR: &'static str = T::DIR;
+    type Error = T::Error;
+    type Loader = T::Loader;
+
+    fn load<S>(file: S, loader: &mut Self::Loader) -> Result<Self, Self::Error>
+        where
+            S: AsRef<str>,
+    { Ok(Box::new(T::load(file, loader)?)) }
 }
