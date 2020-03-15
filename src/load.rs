@@ -1,8 +1,4 @@
-pub const DATA_PATH: &str = "data";
-
 pub trait Load {
-    const DIR: &'static str;
-
     type Error;
     type Loader;
 
@@ -13,13 +9,12 @@ pub trait Load {
 }
 
 use std::rc::Rc;
+use super::asset::Asset;
 
 impl<T> Load for Rc<T>
     where
         T: Load,
 {
-    const DIR: &'static str = T::DIR;
-
     type Error = T::Error;
     type Loader = T::Loader;
 
@@ -30,20 +25,9 @@ impl<T> Load for Rc<T>
     { Ok(Rc::new(T::load(file, loader)?)) }
 }
 
-pub fn load_with<T, P>(file: P, loader: &mut T::Loader) -> Result<T, T::Error>
+impl<T> Asset for Rc<T>
     where
-        T: Load,
-        P: AsRef<std::path::Path>,
+        T: Asset,
 {
-    let path = std::path::Path::new(DATA_PATH)
-        .join(T::DIR)
-        .join(file);
-
-    T::load(path, loader)
+    const DIR: &'static str = T::DIR;
 }
-
-pub fn load<T, P>(file: P) -> Result<T, T::Error>
-    where
-        T: Load<Loader=()>,
-        P: AsRef<std::path::Path>,
-{ load_with(file, &mut ()) }

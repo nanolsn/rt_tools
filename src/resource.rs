@@ -2,7 +2,7 @@ use std::collections::{hash_map::Entry, HashMap};
 
 use super::{
     get::{Get, GetMut},
-    load::{load_with, Load},
+    asset::{load_asset_with, Asset},
 };
 
 #[derive(Debug)]
@@ -17,12 +17,12 @@ impl<T> Resource<T> {
     pub fn load_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<usize, T::Error>
         where
             S: Into<String>,
-            T: Load,
+            T: Asset,
     {
         match self.files.entry(file.into()) {
             Entry::Occupied(en) => Ok(*en.get()),
             Entry::Vacant(en) => {
-                let item = load_with(en.key(), loader)?;
+                let item = load_asset_with(en.key(), loader)?;
                 let id = self.items.len();
 
                 self.items.push(item);
@@ -34,13 +34,13 @@ impl<T> Resource<T> {
     pub fn load<S>(&mut self, file: S) -> Result<usize, T::Error>
         where
             S: Into<String>,
-            T: Load<Loader=()>,
+            T: Asset<Loader=()>,
     { self.load_with(file, &mut ()) }
 
     pub fn receive_with<S>(&mut self, file: S, loader: &mut T::Loader) -> Result<&T, T::Error>
         where
             S: Into<String>,
-            T: Load,
+            T: Asset,
     {
         let idx = self.load_with(file, loader)?;
         Ok(self.get(idx).unwrap())
@@ -49,7 +49,7 @@ impl<T> Resource<T> {
     pub fn receive<S>(&mut self, file: S) -> Result<&T, T::Error>
         where
             S: Into<String>,
-            T: Load<Loader=()>,
+            T: Asset<Loader=()>,
     { self.receive_with(file, &mut ()) }
 
     pub fn get<B>(&self, by: B) -> Option<&T>
@@ -143,9 +143,11 @@ mod tests {
         name: String,
     }
 
-    impl Load for Tile {
+    impl Asset for Tile {
         const DIR: &'static str = "tiles";
+    }
 
+    impl Load for Tile {
         type Error = ();
         type Loader = ();
 
@@ -199,9 +201,11 @@ mod tests {
         tiles: Vec<Rc<Tile>>,
     }
 
-    impl Load for TileSet {
+    impl Asset for TileSet {
         const DIR: &'static str = "tile_sets";
+    }
 
+    impl Load for TileSet {
         type Error = ();
         type Loader = Resource<Rc<Tile>>;
 
@@ -223,10 +227,10 @@ mod tests {
     }
 
     #[test]
-    fn load_with() {
+    fn load_asset_with() {
         let mut res: Resource<Rc<Tile>> = Resource::new();
 
-        let ts: TileSet = super::load_with("one two", &mut res).unwrap();
+        let ts: TileSet = super::load_asset_with("one two", &mut res).unwrap();
         assert_eq!(res.items[0].name, "one");
         assert_eq!(res.items[1].name, "two");
         assert!(ts
@@ -236,7 +240,7 @@ mod tests {
             .all(|(a, &b)| a.name.as_str() == b)
         );
 
-        let ts: TileSet = super::load_with("three one two", &mut res).unwrap();
+        let ts: TileSet = super::load_asset_with("three one two", &mut res).unwrap();
         assert_eq!(res.items[0].name, "one");
         assert_eq!(res.items[1].name, "two");
         assert_eq!(res.items[2].name, "three");

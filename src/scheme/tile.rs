@@ -19,7 +19,7 @@ use crate::{
     state as st,
     shell_transform::{Shell, ShellTransformAction, apply_actions},
     resource::Resource,
-    load::Load,
+    asset::Asset,
 };
 
 type TileLoaders<M, T> = (Resource<M>, Resource<T>);
@@ -27,8 +27,8 @@ type TileResult<M, T> = Result<tl::Tile, tl::TileError<M, T>>;
 
 fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Error, T::Error>
     where
-        M: Load<Loader=()>,
-        T: Load<Loader=()>,
+        M: Asset<Loader=()>,
+        T: Asset<Loader=()>,
 {
     let (model_loader, texture_loader) = loaders;
 
@@ -102,8 +102,8 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
 
 impl<M, T> super::ConvertFrom<Tile, &mut TileLoaders<M, T>> for tl::Tile
     where
-        M: Load<Loader=()>,
-        T: Load<Loader=()>,
+        M: Asset<Loader=()>,
+        T: Asset<Loader=()>,
 {
     type Error = tl::TileError<M::Error, T::Error>;
 

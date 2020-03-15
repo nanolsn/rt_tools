@@ -1,5 +1,6 @@
 mod scheme;
 
+pub mod asset;
 pub mod atlas;
 pub mod axis;
 pub mod face;

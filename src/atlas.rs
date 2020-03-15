@@ -1,5 +1,6 @@
 use super::{
     load::Load,
+    asset::Asset,
     resource::Resource,
     sprite_map::SpriteMap,
 };
@@ -17,9 +18,11 @@ impl From<image::ImageError> for AtlasError {
 #[derive(Debug)]
 struct TexturePath(String);
 
-impl Load for TexturePath {
+impl Asset for TexturePath {
     const DIR: &'static str = "textures";
+}
 
+impl Load for TexturePath {
     type Error = ();
     type Loader = ();
 
