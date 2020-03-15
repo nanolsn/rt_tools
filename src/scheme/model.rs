@@ -46,7 +46,7 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                 Err(fc::FaceError::IncorrectDataFormat)?
             }
 
-            let vertexes: Option<fc::FaceVertexes> = if let Some(d) = f.data {
+            let vertexes: Vec<Vertex> = if let Some(d) = f.data {
                 let pos_ids = d.pos.ok_or(fc::FaceError::IncorrectVertexNumber)?;
                 let st_ids = d.st.ok_or(fc::FaceError::IncorrectVertexNumber)?;
                 let norm_id = d.norm.ok_or(fc::FaceError::IncorrectVertexNumber)?;
@@ -69,7 +69,7 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                     })
                     .collect();
 
-                res.and_then(|v| v.into_iter().collect())
+                res.ok_or(fc::FaceError::OutOfRange)?
             } else {
                 let pos = f.pos.ok_or(fc::FaceError::IncorrectVertexNumber)?;
                 let st = f.st.ok_or(fc::FaceError::IncorrectVertexNumber)?;
@@ -87,8 +87,11 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                     .collect()
             };
 
+            let vertexes = fc::FaceVertexes::from_slice(&*vertexes)
+                .ok_or(fc::FaceError::OutOfRange)?;
+
             Ok(fc::Face {
-                vertexes: vertexes.ok_or(fc::FaceError::OutOfRange)?,
+                vertexes,
                 contact: f.contact.unwrap_or_default().as_str().into(),
                 layer: f.layer.unwrap_or_default(),
             })

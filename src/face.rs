@@ -17,22 +17,22 @@ pub enum FaceVertexes {
     Square([Vertex; 4]),
 }
 
-impl std::iter::FromIterator<Vertex> for Option<FaceVertexes> {
-    fn from_iter<T>(iter: T) -> Self
-        where
-            T: IntoIterator<Item=Vertex>,
-    {
-        let mut it = iter.into_iter();
-        let v1 = it.next()?;
-        let v2 = it.next()?;
-        let v3 = it.next()?;
-
-        if let Some(v4) = it.next() {
-            Some(FaceVertexes::Square([v1, v2, v3, v4]))
-        } else {
-            Some(FaceVertexes::Triangle([v1, v2, v3]))
+impl FaceVertexes {
+    pub fn from_slice(vs: &[Vertex]) -> Option<Self> {
+        match vs {
+            &[x, y, z] => Some(FaceVertexes::Triangle([x, y, z])),
+            &[x, y, z, w] => Some(FaceVertexes::Square([x, y, z, w])),
+            _ => None,
         }
     }
+}
+
+impl From<[Vertex; 3]> for FaceVertexes {
+    fn from(vs: [Vertex; 3]) -> Self { FaceVertexes::Triangle(vs) }
+}
+
+impl From<[Vertex; 4]> for FaceVertexes {
+    fn from(vs: [Vertex; 4]) -> Self { FaceVertexes::Square(vs) }
 }
 
 impl FaceVertexes {
