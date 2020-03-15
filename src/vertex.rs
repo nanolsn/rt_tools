@@ -1,8 +1,6 @@
-use glm::{Vec3, Vec2};
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Vertex {
-    pub pos: Vec3,
-    pub st: Vec2,
-    pub norm: Vec3,
+    pub pos: glm::Vec3,
+    pub st: glm::Vec2,
+    pub norm: glm::Vec3,
 }

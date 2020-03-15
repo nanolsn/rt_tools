@@ -30,6 +30,7 @@ use crate::{
     model as md,
     face as fc,
     vertex::Vertex,
+    normal::calc_normal,
 };
 
 fn convert(src: Model) -> Result<md::Model, md::ModelError> {
@@ -49,10 +50,27 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
             let vertexes: Vec<Vertex> = if let Some(d) = f.data {
                 let pos_ids = d.pos.ok_or(fc::FaceError::IncorrectVertexNumber)?;
                 let st_ids = d.st.ok_or(fc::FaceError::IncorrectVertexNumber)?;
-                let norm_id = d.norm.ok_or(fc::FaceError::IncorrectVertexNumber)?;
-                let &[q, w, e] = norm
-                    .get(norm_id as usize)
-                    .ok_or(fc::FaceError::OutOfRange)?;
+
+                if (pos_ids.len() != 3 && pos_ids.len() != 4)
+                    || (st_ids.len() != 3 && st_ids.len() != 4) {
+                    Err(fc::FaceError::IncorrectVertexNumber)?
+                }
+
+                let norm = d
+                    .norm
+                    .and_then(|idx| norm.get(idx as usize))
+                    .map(|&[q, w, e]| Ok(glm::vec3(q, w, e)))
+                    .unwrap_or_else(|| {
+                        let i = pos_ids[0] as usize;
+                        let j = pos_ids[1] as usize;
+                        let k = pos_ids[2] as usize;
+
+                        let &a = pos.get(i).ok_or(fc::FaceError::OutOfRange)?;
+                        let &b = pos.get(j).ok_or(fc::FaceError::OutOfRange)?;
+                        let &c = pos.get(k).ok_or(fc::FaceError::OutOfRange)?;
+
+                        Ok(calc_normal(a, b, c))
+                    })?;
 
                 let res: Option<Vec<Vertex>> = pos_ids
                     .into_iter()
@@ -64,7 +82,7 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                         Some(Vertex {
                             pos: glm::vec3(x, y, z),
                             st: glm::vec2(s, t),
-                            norm: glm::vec3(q, w, e),
+                            norm,
                         })
                     })
                     .collect();
@@ -73,7 +91,10 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
             } else {
                 let pos = f.pos.ok_or(fc::FaceError::IncorrectVertexNumber)?;
                 let st = f.st.ok_or(fc::FaceError::IncorrectVertexNumber)?;
-                let [q, w, e] = f.norm.ok_or(fc::FaceError::IncorrectVertexNumber)?;
+                let norm = f
+                    .norm
+                    .map(|[q, w, e]| glm::vec3(q, w, e))
+                    .unwrap_or_else(|| calc_normal(pos[0], pos[1], pos[2]));
 
                 pos
                     .into_iter()
@@ -82,7 +103,7 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                         Vertex {
                             pos: glm::vec3(x, y, z),
                             st: glm::vec2(s, t),
-                            norm: glm::vec3(q, w, e),
+                            norm,
                         })
                     .collect()
             };
@@ -276,8 +297,8 @@ mod tests {
                     layer: None,
                     contact: None,
                     data: Some(Data {
-                        pos: Some(vec![1]),
-                        st: Some(vec![0]),
+                        pos: Some(vec![1, 1, 1]),
+                        st: Some(vec![0, 0, 0]),
                         norm: Some(0),
                     }),
                 },
@@ -302,8 +323,8 @@ mod tests {
                     layer: None,
                     contact: None,
                     data: Some(Data {
-                        pos: Some(vec![1]),
-                        st: Some(vec![0]),
+                        pos: Some(vec![1, 1, 1]),
+                        st: Some(vec![0, 0, 0]),
                         norm: Some(0),
                     }),
                 },

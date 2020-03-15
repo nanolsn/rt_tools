@@ -7,6 +7,7 @@ pub mod face;
 pub mod get;
 pub mod load;
 pub mod model;
+pub mod normal;
 pub mod parse;
 pub mod point;
 pub mod resource;
