@@ -115,6 +115,11 @@ impl<M, T> super::ConvertFrom<Tile, &mut TileLoaders<M, T>> for tl::Tile
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        load::Load,
+        shell_transform::ShellTransform,
+        axis::Axis,
+    };
 
     #[test]
     fn deserialize_empty() {
@@ -177,5 +182,91 @@ mod tests {
                 },
             ]),
         });
+    }
+
+    struct Model;
+
+    impl Load for Model {
+        type Error = ();
+        type Loader = ();
+
+        fn load<P>(_: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
+            where
+                P: AsRef<std::path::Path>,
+                Self: Sized,
+        { Ok(Model) }
+    }
+
+    impl Asset for Model {
+        const DIR: &'static str = "models";
+    }
+
+    struct Texture;
+
+    impl Load for Texture {
+        type Error = ();
+        type Loader = ();
+
+        fn load<P>(_: P, _: &mut Self::Loader) -> Result<Self, Self::Error>
+            where
+                P: AsRef<std::path::Path>,
+                Self: Sized,
+        { Ok(Texture) }
+    }
+
+    impl Asset for Texture {
+        const DIR: &'static str = "textures";
+    }
+
+    #[test]
+    fn convert() {
+        let tile = Tile {
+            models: Some(vec!["m1".to_owned(), "m2".to_owned(), "m3".to_owned()]),
+            textures: Some(vec!["t1".to_owned(), "t2".to_owned(), "t1".to_owned()]),
+            states: Some(vec![
+                State {
+                    model: Some(1),
+                    layers: Some(vec![1, 1]),
+                    transform: Some(vec!["turn_x".to_owned()]),
+                },
+                State {
+                    model: Some(0),
+                    layers: Some(vec![0, 1]),
+                    transform: Some(vec!["flip_x".to_owned()]),
+                },
+                State {
+                    model: Some(2),
+                    layers: Some(vec![2, 2]),
+                    transform: Some(vec!["turn_-z".to_owned()]),
+                },
+            ]),
+        };
+
+        let expected = tl::Tile {
+            states: vec![
+                st::State {
+                    model: 0,
+                    shell: *Shell::new().turn_counter_clockwise(Axis::X),
+                    layers: vec![0, 0],
+                },
+                st::State {
+                    model: 1,
+                    shell: *Shell::new().flip(Axis::X),
+                    layers: vec![1, 0],
+                },
+                st::State {
+                    model: 2,
+                    shell: *Shell::new().turn_clockwise(Axis::Z),
+                    layers: vec![1, 1],
+                },
+            ],
+            id: 0,
+        };
+
+        let model_loader: Resource<Model> = Resource::new();
+        let texture_loader: Resource<Texture> = Resource::new();
+        let mut loader = (model_loader, texture_loader);
+
+        assert_eq!(super::convert(tile, &mut loader).unwrap(), expected);
     }
 }

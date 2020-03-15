@@ -2,7 +2,7 @@ use super::{
     shell_transform::Shell,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum StateError<M, T> {
     ModelError(M),
     TextureError(T),
@@ -12,7 +12,7 @@ pub enum StateError<M, T> {
     OutOfRange,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct State {
     pub model: usize,
     pub shell: Shell,
