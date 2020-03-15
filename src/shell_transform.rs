@@ -3,7 +3,6 @@ use glm::{vec3, Vec3};
 use super::{
     axis::Axis,
     sides::*,
-    parse::ParseYaml,
 };
 
 pub trait ShellTransform {
@@ -234,15 +233,6 @@ impl std::fmt::Display for ShellTransformAction {
             TurnCounterClockwise(ax) => write!(f, "turn_{}", ax),
             TurnClockwise(ax) => write!(f, "turn_-{}", ax),
         }
-    }
-}
-
-impl ParseYaml for ShellTransformAction {
-    type DataError = ();
-
-    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> {
-        use std::convert::TryInto;
-        yml.as_str().ok_or(())?.try_into()
     }
 }
 

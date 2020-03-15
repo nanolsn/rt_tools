@@ -1,32 +1,19 @@
-use std::convert::{TryFrom, TryInto};
+use std::{
+    convert::{TryFrom, TryInto},
+    iter::FromIterator,
+};
 
 use super::{
     sides::Sides,
     vertex::Vertex,
-    parse::{ParseYaml, VecError, face::yaml_to_face},
 };
-use std::iter::FromIterator;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum FaceError {
     IncorrectVertexNumber,
-    VecError(VecError),
     ArrayError,
     OutOfRange,
     IncorrectDataFormat,
-}
-
-impl From<VecError> for FaceError {
-    fn from(err: VecError) -> Self { FaceError::VecError(err) }
-}
-
-impl From<Option<VecError>> for FaceError {
-    fn from(err: Option<VecError>) -> Self {
-        match err {
-            None => FaceError::ArrayError,
-            Some(ve) => FaceError::VecError(ve),
-        }
-    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -104,12 +91,6 @@ impl Face {
     pub fn new(vertexes: &[Vertex], contact: Sides, layer: u32) -> Result<Self, FaceError> {
         Ok(Face { vertexes: vertexes.try_into()?, contact, layer })
     }
-}
-
-impl ParseYaml for Face {
-    type DataError = FaceError;
-
-    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_face(yml) }
 }
 
 #[cfg(test)]

@@ -1,5 +1,4 @@
 use std::convert::TryInto;
-use super::parse::{ParseYaml, sides::yaml_to_sides};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Side {
@@ -143,12 +142,6 @@ impl Into<Sides> for Side {
 
         Sides { bits: sides }
     }
-}
-
-impl ParseYaml for Sides {
-    type DataError = ();
-
-    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { Ok(yaml_to_sides(yml)) }
 }
 
 impl std::ops::BitOr<Side> for Side {

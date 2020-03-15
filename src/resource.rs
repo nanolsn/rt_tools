@@ -2,7 +2,7 @@ use std::collections::{hash_map::Entry, HashMap};
 
 use super::{
     get::{Get, GetMut},
-    load::{load_data_with, Load},
+    load::{load_with, Load},
 };
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ impl<T> Resource<T> {
         match self.files.entry(file.into()) {
             Entry::Occupied(en) => Ok(*en.get()),
             Entry::Vacant(en) => {
-                let item = load_data_with(en.key(), loader)?;
+                let item = load_with(en.key(), loader)?;
                 let id = self.items.len();
 
                 self.items.push(item);
@@ -226,7 +226,7 @@ mod tests {
     fn load_with() {
         let mut res: Resource<Rc<Tile>> = Resource::new();
 
-        let ts: TileSet = load_data_with("one two", &mut res).unwrap();
+        let ts: TileSet = super::load_with("one two", &mut res).unwrap();
         assert_eq!(res.items[0].name, "one");
         assert_eq!(res.items[1].name, "two");
         assert!(ts
@@ -236,7 +236,7 @@ mod tests {
             .all(|(a, &b)| a.name.as_str() == b)
         );
 
-        let ts: TileSet = load_data_with("three one two", &mut res).unwrap();
+        let ts: TileSet = super::load_with("three one two", &mut res).unwrap();
         assert_eq!(res.items[0].name, "one");
         assert_eq!(res.items[1].name, "two");
         assert_eq!(res.items[2].name, "three");

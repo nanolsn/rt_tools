@@ -18,16 +18,20 @@ use crate::{
     tile as tl,
     state as st,
     shell_transform::{Shell, ShellTransformAction, apply_actions},
+    resource::Resource,
+    load::Load,
 };
 
-// TODO: Make Resource<Model> loader instead
-pub struct Loader;
+type TileLoaders<M, T> = (Resource<M>, Resource<T>);
+type TileResult<M, T> = Result<tl::Tile, tl::TileError<M, T>>;
 
-impl Loader {
-    pub fn load(&self, _: &str) -> usize { 0 }
-}
+fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Error, T::Error>
+    where
+        M: Load<Loader=()>,
+        T: Load<Loader=()>,
+{
+    let (model_loader, texture_loader) = loaders;
 
-fn convert(src: Tile, loader: Loader) -> Result<tl::Tile, tl::TileError> {
     let models = src.models.unwrap_or_default();
     let textures = src.textures.unwrap_or_default();
     let states = src.states.unwrap_or_default();
@@ -40,11 +44,12 @@ fn convert(src: Tile, loader: Loader) -> Result<tl::Tile, tl::TileError> {
                 let model_file = models.get(model as usize)
                     .ok_or(st::StateError::OutOfRange)?;
 
-                loader.load(&*model_file)
+                model_loader.load(&*model_file)
+                    .map_err(|e| st::StateError::ModelError(e))?
             },
 
             shell: {
-                let actions_result: Result<Vec<ShellTransformAction>, st::StateError> = state
+                let actions_result: Result<Vec<ShellTransformAction>, st::StateError<_, _>> = state
                     .transform
                     .unwrap_or_default()
                     .into_iter()
@@ -66,14 +71,25 @@ fn convert(src: Tile, loader: Loader) -> Result<tl::Tile, tl::TileError> {
                     Err(st::StateError::OutOfRange)?
                 }
 
-                // TODO: Load textures
+                let layers_result: Result<Vec<u32>, _> = layers
+                    .into_iter()
+                    .map(|l| {
+                        let texture_file = textures
+                            .get(l as usize)
+                            .ok_or(st::StateError::OutOfRange)?;
 
-                layers
+                        texture_loader.load(&*texture_file)
+                            .map_err(|e| st::StateError::TextureError(e))
+                            .map(|id| id as u32)
+                    })
+                    .collect();
+
+                layers_result?
             },
         })
     };
 
-    let states_result: Result<Vec<st::State>, st::StateError> = states
+    let states_result: Result<Vec<st::State>, st::StateError<_, _>> = states
         .into_iter()
         .map(convert_state)
         .collect();
@@ -82,6 +98,18 @@ fn convert(src: Tile, loader: Loader) -> Result<tl::Tile, tl::TileError> {
         states: states_result?,
         id: 0,
     })
+}
+
+impl<M, T> super::ConvertFrom<Tile, TileLoaders<M, T>> for tl::Tile
+    where
+        M: Load<Loader=()>,
+        T: Load<Loader=()>,
+{
+    type Error = tl::TileError<M::Error, T::Error>;
+
+    fn convert(from: Tile, loader: &mut TileLoaders<M, T>) -> TileResult<M::Error, T::Error> {
+        convert(from, loader)
+    }
 }
 
 #[cfg(test)]

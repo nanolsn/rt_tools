@@ -1,4 +1,3 @@
-pub mod parse;
 mod scheme;
 
 pub mod atlas;
@@ -7,6 +6,7 @@ pub mod face;
 pub mod get;
 pub mod load;
 pub mod model;
+pub mod parse;
 pub mod point;
 pub mod resource;
 pub mod shell_transform;

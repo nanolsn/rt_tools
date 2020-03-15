@@ -30,7 +30,7 @@ impl<T> Load for Rc<T>
     { Ok(Rc::new(T::load(file, loader)?)) }
 }
 
-pub fn load_data_with<T, P>(file: P, loader: &mut T::Loader) -> Result<T, T::Error>
+pub fn load_with<T, P>(file: P, loader: &mut T::Loader) -> Result<T, T::Error>
     where
         T: Load,
         P: AsRef<std::path::Path>,
@@ -42,8 +42,8 @@ pub fn load_data_with<T, P>(file: P, loader: &mut T::Loader) -> Result<T, T::Err
     T::load(path, loader)
 }
 
-pub fn load_data<T, P>(file: P) -> Result<T, T::Error>
+pub fn load<T, P>(file: P) -> Result<T, T::Error>
     where
         T: Load<Loader=()>,
         P: AsRef<std::path::Path>,
-{ load_data_with(file, &mut ()) }
+{ load_with(file, &mut ()) }

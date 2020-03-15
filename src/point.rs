@@ -1,7 +1,6 @@
 use std::iter::FromIterator;
 use super::{
     sides::*,
-    parse::{ParseYaml, point::yaml_to_point},
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -95,12 +94,6 @@ impl FromIterator<i32> for Point {
         let z = iter.next().unwrap_or(0);
         Point(x, y, z)
     }
-}
-
-impl ParseYaml for Point {
-    type DataError = ();
-
-    fn parse(yml: &yaml::Yaml) -> Result<Self, Self::DataError> { yaml_to_point(yml) }
 }
 
 impl std::ops::Add for Point {
