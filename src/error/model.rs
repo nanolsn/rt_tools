@@ -1,9 +1,3 @@
-use super::{
-    face::{Face, FaceError},
-    sides::Sides,
-    vertex::Vertex,
-};
-
 #[derive(Debug, Eq, PartialEq)]
 pub enum ModelField {
     Pos,
@@ -27,6 +21,36 @@ impl ModelField {
     }
 }
 
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum FaceError {
+    WrongVertexNumber(ModelField),
+    ArrayError,
+    OutOfRange(ModelField, usize),
+    IncorrectDataFormat,
+}
+
+impl super::Error for FaceError {
+    fn title() -> &'static str { "Face Error" }
+
+    fn case(&self) -> &str {
+        match self {
+            FaceError::WrongVertexNumber(_) => "Wrong Vertex Number",
+            FaceError::ArrayError => "Array Error",
+            FaceError::OutOfRange(..) => "Out of Range",
+            FaceError::IncorrectDataFormat => "Incorrect Data Format",
+        }
+    }
+
+    fn clarification(&self) -> Option<String> {
+        match self {
+            FaceError::WrongVertexNumber(f) => Some(format!("at {}", f.path())),
+            FaceError::OutOfRange(f, i) => Some(format!("at {}[{}]", f.path(), i)),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum ModelError {
     FacesError,
@@ -38,7 +62,7 @@ impl From<FaceError> for ModelError {
     fn from(err: FaceError) -> Self { ModelError::FaceError(err) }
 }
 
-impl super::error::Error for ModelError {
+impl super::Error for ModelError {
     fn title() -> &'static str { "Model Error" }
 
     fn case(&self) -> &str {
@@ -59,26 +83,6 @@ impl super::error::Error for ModelError {
 
 impl std::fmt::Display for ModelError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", super::error::Error::display(self))
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Model {
-    pub faces: Vec<Face>,
-    pub full_sides: Sides,
-}
-
-impl Model {
-    pub fn get_indexed_vertexes(&self) -> (Vec<Vertex>, Vec<u32>) {
-        let min_capacity = self.faces.len() * 3;
-        let mut vertexes = Vec::with_capacity(min_capacity);
-        let mut indexes = Vec::with_capacity(min_capacity);
-
-        for face in &self.faces {
-            face.vertexes.extend_vertexes(&mut vertexes, &mut indexes);
-        }
-
-        (vertexes, indexes)
+        write!(f, "{}", super::Error::display(self))
     }
 }

@@ -1,8 +1,10 @@
 use super::{
-    load::Load,
-    asset::Asset,
     resource::Resource,
     sprite_map::SpriteMap,
+    super::{
+        asset::Asset,
+        load::Load,
+    },
 };
 
 #[derive(Debug)]

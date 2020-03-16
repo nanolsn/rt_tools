@@ -1,3 +1,6 @@
+pub mod model;
+pub mod tile;
+
 pub trait Error {
     fn title() -> &'static str;
 

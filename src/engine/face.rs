@@ -1,37 +1,7 @@
 use super::{
     sides::Sides,
     vertex::Vertex,
-    model::ModelField,
 };
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum FaceError {
-    WrongVertexNumber(ModelField),
-    ArrayError,
-    OutOfRange(ModelField, usize),
-    IncorrectDataFormat,
-}
-
-impl super::error::Error for FaceError {
-    fn title() -> &'static str { "Face Error" }
-
-    fn case(&self) -> &str {
-        match self {
-            FaceError::WrongVertexNumber(_) => "Wrong Vertex Number",
-            FaceError::ArrayError => "Array Error",
-            FaceError::OutOfRange(..) => "Out of Range",
-            FaceError::IncorrectDataFormat => "Incorrect Data Format",
-        }
-    }
-
-    fn clarification(&self) -> Option<String> {
-        match self {
-            FaceError::WrongVertexNumber(f) => Some(format!("at {}", f.path())),
-            FaceError::OutOfRange(f, i) => Some(format!("at {}[{}]", f.path(), i)),
-            _ => None,
-        }
-    }
-}
 
 #[derive(Debug, PartialEq)]
 pub enum FaceVertexes {

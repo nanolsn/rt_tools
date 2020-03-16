@@ -1,7 +1,3 @@
-use super::{
-    state::*,
-};
-
 #[derive(Debug, Eq, PartialEq)]
 pub enum TileField {
     Models,
@@ -20,6 +16,38 @@ impl TileField {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum StateError<M, T> {
+    ModelError(M),
+    TextureError(T),
+    TransformError,
+    NoLayerDefined,
+    NoModelDefined,
+    OutOfRange(TileField, usize),
+}
+
+impl<M, T> super::Error for StateError<M, T> {
+    fn title() -> &'static str { "State Error" }
+
+    fn case(&self) -> &str {
+        match self {
+            StateError::ModelError(_) => "Model Error",
+            StateError::TextureError(_) => "Texture Error",
+            StateError::TransformError => "Transform Error",
+            StateError::NoLayerDefined => "No Layer Defined",
+            StateError::NoModelDefined => "NoModel Defined",
+            StateError::OutOfRange(_, _) => "Out Of Range",
+        }
+    }
+
+    fn clarification(&self) -> Option<String> {
+        match self {
+            StateError::OutOfRange(f, i) => Some(format!("at {}[{}]", f.path(), i)),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum TileError<M, T> {
     StateError(StateError<M, T>),
     NoStates,
@@ -29,7 +57,7 @@ impl<M, T> From<StateError<M, T>> for TileError<M, T> {
     fn from(err: StateError<M, T>) -> Self { TileError::StateError(err) }
 }
 
-impl<M, T> super::error::Error for TileError<M, T> {
+impl<M, T> super::Error for TileError<M, T> {
     fn title() -> &'static str { "Tile Error" }
 
     fn case(&self) -> &str {
@@ -49,16 +77,6 @@ impl<M, T> super::error::Error for TileError<M, T> {
 
 impl<M, T> std::fmt::Display for TileError<M, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", super::error::Error::display(self))
+        write!(f, "{}", super::Error::display(self))
     }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Tile {
-    pub states: Vec<State>,
-    pub id: u32,
-}
-
-impl Tile {
-    pub fn detect_state(&self) -> &State { &self.states[0] }
 }

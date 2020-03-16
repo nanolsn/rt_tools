@@ -27,39 +27,42 @@ pub(crate) struct Data {
 }
 
 use crate::{
-    model as md,
-    face as fc,
-    vertex::Vertex,
-    normal::calc_normal,
+    engine::{
+        model as md,
+        face as fc,
+        vertex::Vertex,
+        normal::calc_normal,
+    },
+    error::model::*,
 };
 
-fn convert(src: Model) -> Result<md::Model, md::ModelError> {
+fn convert(src: Model) -> Result<md::Model, ModelError> {
     let pos = src.pos.unwrap_or_default();
     let st = src.st.unwrap_or_default();
     let norm = src.norm.unwrap_or_default();
     let faces = src.faces.unwrap_or_default();
     let full_sides = src.full_sides.unwrap_or_default();
 
-    let faces_result: Result<Vec<fc::Face>, fc::FaceError> = faces
+    let faces_result: Result<Vec<fc::Face>, FaceError> = faces
         .into_iter()
         .map(|f| {
             if f.data.is_some() && (f.pos.is_some() || f.st.is_some() || f.norm.is_some()) {
-                Err(fc::FaceError::IncorrectDataFormat)?
+                Err(FaceError::IncorrectDataFormat)?
             }
 
             let vertexes: Vec<Vertex> = if let Some(d) = f.data {
                 let pos_ids = d.pos
-                    .ok_or(fc::FaceError::WrongVertexNumber(md::ModelField::DataPos))?;
+                    .ok_or(FaceError::WrongVertexNumber(ModelField::DataPos))?;
 
                 let st_ids = d.st
-                    .ok_or(fc::FaceError::WrongVertexNumber(md::ModelField::DataSt))?;
+                    .ok_or(FaceError::WrongVertexNumber(ModelField::DataSt))?;
 
                 if pos_ids.len() != 3 && pos_ids.len() != 4 {
-                    Err(fc::FaceError::WrongVertexNumber(md::ModelField::DataPos))?
+                    Err(FaceError::WrongVertexNumber(ModelField::DataPos))?
                 }
 
                 if st_ids.len() != 3 && st_ids.len() != 4 {
-                    Err(fc::FaceError::WrongVertexNumber(md::ModelField::DataSt))?
+                    Err(FaceError::WrongVertexNumber(ModelField::DataSt))?
                 }
 
                 let norm = d
@@ -72,29 +75,29 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                         let k = pos_ids[2] as usize;
 
                         let &a = pos.get(i)
-                            .ok_or(fc::FaceError::OutOfRange(md::ModelField::Pos, i))?;
+                            .ok_or(FaceError::OutOfRange(ModelField::Pos, i))?;
 
                         let &b = pos.get(j)
-                            .ok_or(fc::FaceError::OutOfRange(md::ModelField::Pos, j))?;
+                            .ok_or(FaceError::OutOfRange(ModelField::Pos, j))?;
 
                         let &c = pos.get(k)
-                            .ok_or(fc::FaceError::OutOfRange(md::ModelField::Pos, k))?;
+                            .ok_or(FaceError::OutOfRange(ModelField::Pos, k))?;
 
                         Ok(calc_normal(a, b, c))
                     })?;
 
-                let res: Result<Vec<Vertex>, fc::FaceError> = pos_ids
+                let res: Result<Vec<Vertex>, FaceError> = pos_ids
                     .into_iter()
                     .zip(st_ids)
                     .map(|(pos_id, st_id)| ((pos_id as usize, st_id as usize)))
                     .map(|(pos_id, st_id)| {
                         let &[x, y, z] = pos
                             .get(pos_id)
-                            .ok_or(fc::FaceError::OutOfRange(md::ModelField::Pos, pos_id))?;
+                            .ok_or(FaceError::OutOfRange(ModelField::Pos, pos_id))?;
 
                         let &[s, t] = st
                             .get(st_id)
-                            .ok_or(fc::FaceError::OutOfRange(md::ModelField::St, st_id))?;
+                            .ok_or(FaceError::OutOfRange(ModelField::St, st_id))?;
 
                         Ok(Vertex {
                             pos: glm::vec3(x, y, z),
@@ -107,10 +110,10 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                 res?
             } else {
                 let pos = f.pos
-                    .ok_or(fc::FaceError::WrongVertexNumber(md::ModelField::Pos))?;
+                    .ok_or(FaceError::WrongVertexNumber(ModelField::Pos))?;
 
                 let st = f.st
-                    .ok_or(fc::FaceError::WrongVertexNumber(md::ModelField::St))?;
+                    .ok_or(FaceError::WrongVertexNumber(ModelField::St))?;
 
                 let norm = f
                     .norm
@@ -144,7 +147,7 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
 }
 
 impl super::ConvertFrom<Model, ()> for md::Model {
-    type Error = md::ModelError;
+    type Error = ModelError;
 
     fn convert(from: Model, _: ()) -> Result<Self, Self::Error> { convert(from) }
 }
@@ -275,7 +278,7 @@ mod tests {
         });
     }
 
-    use crate::sides::*;
+    use crate::engine::sides::*;
 
     #[test]
     fn convert_empty() {
@@ -324,10 +327,7 @@ mod tests {
             full_sides: None,
         };
 
-        let err = md::ModelError::FaceError(fc::FaceError::OutOfRange(
-            md::ModelField::Pos,
-            1,
-        ));
+        let err = ModelError::FaceError(FaceError::OutOfRange(ModelField::Pos, 1));
 
         assert_eq!(super::convert(model), Err(err));
 
@@ -354,7 +354,7 @@ mod tests {
             full_sides: None,
         };
 
-        let err = md::ModelError::FaceError(fc::FaceError::IncorrectDataFormat);
+        let err = ModelError::FaceError(FaceError::IncorrectDataFormat);
         assert_eq!(super::convert(model), Err(err));
     }
 

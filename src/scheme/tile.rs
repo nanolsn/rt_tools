@@ -15,15 +15,18 @@ pub(crate) struct State {
 }
 
 use crate::{
-    tile as tl,
-    state as st,
-    shell_transform::{Shell, ShellTransformAction, apply_actions},
-    resource::Resource,
+    engine::{
+        tile as tl,
+        state as st,
+        shell_transform::*,
+        resource::Resource,
+    },
+    error::tile::*,
     load::Load,
 };
 
 type TileLoaders<M, T> = (Resource<M>, Resource<T>);
-type TileResult<M, T> = Result<tl::Tile, tl::TileError<M, T>>;
+type TileResult<M, T> = Result<tl::Tile, TileError<M, T>>;
 
 fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Error, T::Error>
     where
@@ -39,17 +42,17 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
     let convert_state = |state: State| {
         Ok(st::State {
             model: {
-                let model = state.model.ok_or(st::StateError::NoModelDefined)? as usize;
+                let model_idx = state.model.ok_or(StateError::NoModelDefined)? as usize;
 
-                let model_file = models.get(model)
-                    .ok_or(st::StateError::OutOfRange(tl::TileField::Models, model))?;
+                let model_file = models.get(model_idx)
+                    .ok_or(StateError::OutOfRange(TileField::Models, model_idx))?;
 
                 model_loader.load(&*model_file)
-                    .map_err(|e| st::StateError::ModelError(e))?.0
+                    .map_err(|e| StateError::ModelError(e))?.0
             },
 
             shell: {
-                let actions_result: Result<Vec<ShellTransformAction>, st::StateError<_, _>> = state
+                let actions_result: Result<Vec<ShellTransformAction>, StateError<_, _>> = state
                     .transform
                     .unwrap_or_default()
                     .into_iter()
@@ -57,7 +60,7 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
                         use std::convert::TryFrom;
 
                         ShellTransformAction::try_from(&*s)
-                            .map_err(|_| st::StateError::TransformError)
+                            .map_err(|_| StateError::TransformError)
                     })
                     .collect();
 
@@ -65,12 +68,12 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
             },
 
             layers: {
-                let layers = state.layers.ok_or(st::StateError::NoLayerDefined)?;
+                let layers = state.layers.ok_or(StateError::NoLayerDefined)?;
 
                 if let Some(&l) = layers
                     .iter()
                     .find(|&l| *l as usize >= textures.len()) {
-                    Err(st::StateError::OutOfRange(tl::TileField::Textures, l as usize))?
+                    Err(StateError::OutOfRange(TileField::Textures, l as usize))?
                 }
 
                 let layers_result: Result<Vec<u32>, _> = layers
@@ -80,10 +83,10 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
 
                         let texture_file = textures
                             .get(l)
-                            .ok_or(st::StateError::OutOfRange(tl::TileField::Textures, l))?;
+                            .ok_or(StateError::OutOfRange(TileField::Textures, l))?;
 
                         texture_loader.load(&*texture_file)
-                            .map_err(|e| st::StateError::TextureError(e))
+                            .map_err(|e| StateError::TextureError(e))
                             .map(|(id, _)| id as u32)
                     })
                     .collect();
@@ -93,7 +96,7 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
         })
     };
 
-    let states_result: Result<Vec<st::State>, st::StateError<_, _>> = states
+    let states_result: Result<Vec<st::State>, StateError<_, _>> = states
         .into_iter()
         .map(convert_state)
         .collect();
@@ -109,7 +112,7 @@ impl<M, T> super::ConvertFrom<Tile, &mut TileLoaders<M, T>> for tl::Tile
         M: Load<Loader=()>,
         T: Load<Loader=()>,
 {
-    type Error = tl::TileError<M::Error, T::Error>;
+    type Error = TileError<M::Error, T::Error>;
 
     fn convert(from: Tile, loader: &mut TileLoaders<M, T>) -> TileResult<M::Error, T::Error> {
         convert(from, loader)
@@ -121,8 +124,7 @@ mod tests {
     use super::*;
     use crate::{
         load::Load,
-        shell_transform::ShellTransform,
-        axis::Axis,
+        engine::axis::Axis,
     };
 
     #[test]
