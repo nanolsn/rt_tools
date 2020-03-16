@@ -1,36 +1,14 @@
 use super::{
     sides::Sides,
     vertex::Vertex,
+    model::ModelField,
 };
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum FaceField {
-    Pos,
-    St,
-    Norm,
-    DataPos,
-    DataSt,
-    DataNorm,
-}
-
-impl FaceField {
-    pub fn path(&self) -> &str {
-        match self {
-            FaceField::Pos => "pos",
-            FaceField::St => "st",
-            FaceField::Norm => "norm",
-            FaceField::DataPos => "data.pos",
-            FaceField::DataSt => "data.st",
-            FaceField::DataNorm => "data.norm",
-        }
-    }
-}
-
-#[derive(Debug, Eq, PartialEq)]
 pub enum FaceError {
-    WrongVertexNumber(FaceField),
+    WrongVertexNumber(ModelField),
     ArrayError,
-    OutOfRange(FaceField, usize),
+    OutOfRange(ModelField, usize),
     IncorrectDataFormat,
 }
 

@@ -39,10 +39,10 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
     let convert_state = |state: State| {
         Ok(st::State {
             model: {
-                let model = state.model.ok_or(st::StateError::NoModelDefined)?;
+                let model = state.model.ok_or(st::StateError::NoModelDefined)? as usize;
 
-                let model_file = models.get(model as usize)
-                    .ok_or(st::StateError::OutOfRange)?;
+                let model_file = models.get(model)
+                    .ok_or(st::StateError::OutOfRange(tl::TileField::Models, model))?;
 
                 model_loader.load(&*model_file)
                     .map_err(|e| st::StateError::ModelError(e))?.0
@@ -67,16 +67,20 @@ fn convert<M, T>(src: Tile, loaders: &mut TileLoaders<M, T>) -> TileResult<M::Er
             layers: {
                 let layers = state.layers.ok_or(st::StateError::NoLayerDefined)?;
 
-                if layers.iter().any(|&l| l as usize >= textures.len()) {
-                    Err(st::StateError::OutOfRange)?
+                if let Some(&l) = layers
+                    .iter()
+                    .find(|&l| *l as usize >= textures.len()) {
+                    Err(st::StateError::OutOfRange(tl::TileField::Textures, l as usize))?
                 }
 
                 let layers_result: Result<Vec<u32>, _> = layers
                     .into_iter()
                     .map(|l| {
+                        let l = l as usize;
+
                         let texture_file = textures
-                            .get(l as usize)
-                            .ok_or(st::StateError::OutOfRange)?;
+                            .get(l)
+                            .ok_or(st::StateError::OutOfRange(tl::TileField::Textures, l))?;
 
                         texture_loader.load(&*texture_file)
                             .map_err(|e| st::StateError::TextureError(e))

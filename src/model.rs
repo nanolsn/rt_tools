@@ -5,6 +5,29 @@ use super::{
 };
 
 #[derive(Debug, Eq, PartialEq)]
+pub enum ModelField {
+    Pos,
+    St,
+    Norm,
+    DataPos,
+    DataSt,
+    DataNorm,
+}
+
+impl ModelField {
+    pub fn path(&self) -> &str {
+        match self {
+            ModelField::Pos => "pos",
+            ModelField::St => "st",
+            ModelField::Norm => "norm",
+            ModelField::DataPos => "data.pos",
+            ModelField::DataSt => "data.st",
+            ModelField::DataNorm => "data.norm",
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
 pub enum ModelError {
     FacesError,
     FaceError(FaceError),
