@@ -3,6 +3,7 @@ mod scheme;
 pub mod asset;
 pub mod atlas;
 pub mod axis;
+pub mod error;
 pub mod face;
 pub mod get;
 pub mod load;

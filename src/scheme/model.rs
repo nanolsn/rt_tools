@@ -48,12 +48,18 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
             }
 
             let vertexes: Vec<Vertex> = if let Some(d) = f.data {
-                let pos_ids = d.pos.ok_or(fc::FaceError::IncorrectVertexNumber)?;
-                let st_ids = d.st.ok_or(fc::FaceError::IncorrectVertexNumber)?;
+                let pos_ids = d.pos
+                    .ok_or(fc::FaceError::WrongVertexNumber(fc::FaceField::DataPos))?;
 
-                if (pos_ids.len() != 3 && pos_ids.len() != 4)
-                    || (st_ids.len() != 3 && st_ids.len() != 4) {
-                    Err(fc::FaceError::IncorrectVertexNumber)?
+                let st_ids = d.st
+                    .ok_or(fc::FaceError::WrongVertexNumber(fc::FaceField::DataSt))?;
+
+                if pos_ids.len() != 3 && pos_ids.len() != 4 {
+                    Err(fc::FaceError::WrongVertexNumber(fc::FaceField::DataPos))?
+                }
+
+                if st_ids.len() != 3 && st_ids.len() != 4 {
+                    Err(fc::FaceError::WrongVertexNumber(fc::FaceField::DataSt))?
                 }
 
                 let norm = d
@@ -65,21 +71,32 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                         let j = pos_ids[1] as usize;
                         let k = pos_ids[2] as usize;
 
-                        let &a = pos.get(i).ok_or(fc::FaceError::OutOfRange)?;
-                        let &b = pos.get(j).ok_or(fc::FaceError::OutOfRange)?;
-                        let &c = pos.get(k).ok_or(fc::FaceError::OutOfRange)?;
+                        let &a = pos.get(i)
+                            .ok_or(fc::FaceError::OutOfRange(fc::FaceField::Pos, i))?;
+
+                        let &b = pos.get(j)
+                            .ok_or(fc::FaceError::OutOfRange(fc::FaceField::Pos, j))?;
+
+                        let &c = pos.get(k)
+                            .ok_or(fc::FaceError::OutOfRange(fc::FaceField::Pos, k))?;
 
                         Ok(calc_normal(a, b, c))
                     })?;
 
-                let res: Option<Vec<Vertex>> = pos_ids
+                let res: Result<Vec<Vertex>, fc::FaceError> = pos_ids
                     .into_iter()
                     .zip(st_ids)
+                    .map(|(pos_id, st_id)| ((pos_id as usize, st_id as usize)))
                     .map(|(pos_id, st_id)| {
-                        let &[x, y, z] = pos.get(pos_id as usize)?;
-                        let &[s, t] = st.get(st_id as usize)?;
+                        let &[x, y, z] = pos
+                            .get(pos_id)
+                            .ok_or(fc::FaceError::OutOfRange(fc::FaceField::Pos, pos_id))?;
 
-                        Some(Vertex {
+                        let &[s, t] = st
+                            .get(st_id)
+                            .ok_or(fc::FaceError::OutOfRange(fc::FaceField::St, st_id))?;
+
+                        Ok(Vertex {
                             pos: glm::vec3(x, y, z),
                             st: glm::vec2(s, t),
                             norm,
@@ -87,10 +104,14 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                     })
                     .collect();
 
-                res.ok_or(fc::FaceError::OutOfRange)?
+                res?
             } else {
-                let pos = f.pos.ok_or(fc::FaceError::IncorrectVertexNumber)?;
-                let st = f.st.ok_or(fc::FaceError::IncorrectVertexNumber)?;
+                let pos = f.pos
+                    .ok_or(fc::FaceError::WrongVertexNumber(fc::FaceField::Pos))?;
+
+                let st = f.st
+                    .ok_or(fc::FaceError::WrongVertexNumber(fc::FaceField::St))?;
+
                 let norm = f
                     .norm
                     .map(|[q, w, e]| glm::vec3(q, w, e))
@@ -108,11 +129,8 @@ fn convert(src: Model) -> Result<md::Model, md::ModelError> {
                     .collect()
             };
 
-            let vertexes = fc::FaceVertexes::from_slice(&*vertexes)
-                .ok_or(fc::FaceError::OutOfRange)?;
-
             Ok(fc::Face {
-                vertexes,
+                vertexes: fc::FaceVertexes::from_slice(&*vertexes).unwrap(),
                 contact: f.contact.unwrap_or_default().as_str().into(),
                 layer: f.layer.unwrap_or_default(),
             })
@@ -306,7 +324,11 @@ mod tests {
             full_sides: None,
         };
 
-        let err = md::ModelError::FaceError(fc::FaceError::OutOfRange);
+        let err = md::ModelError::FaceError(fc::FaceError::OutOfRange(
+            fc::FaceField::Pos,
+            1,
+        ));
+
         assert_eq!(super::convert(model), Err(err));
 
         let model = Model {

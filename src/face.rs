@@ -4,11 +4,55 @@ use super::{
 };
 
 #[derive(Debug, Eq, PartialEq)]
+pub enum FaceField {
+    Pos,
+    St,
+    Norm,
+    DataPos,
+    DataSt,
+    DataNorm,
+}
+
+impl FaceField {
+    pub fn path(&self) -> &str {
+        match self {
+            FaceField::Pos => "pos",
+            FaceField::St => "st",
+            FaceField::Norm => "norm",
+            FaceField::DataPos => "data.pos",
+            FaceField::DataSt => "data.st",
+            FaceField::DataNorm => "data.norm",
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
 pub enum FaceError {
-    IncorrectVertexNumber,
+    WrongVertexNumber(FaceField),
     ArrayError,
-    OutOfRange,
+    OutOfRange(FaceField, usize),
     IncorrectDataFormat,
+}
+
+impl super::error::Error for FaceError {
+    fn title() -> &'static str { "Face Error" }
+
+    fn case(&self) -> &str {
+        match self {
+            FaceError::WrongVertexNumber(_) => "Wrong Vertex Number",
+            FaceError::ArrayError => "Array Error",
+            FaceError::OutOfRange(..) => "Out of Range",
+            FaceError::IncorrectDataFormat => "Incorrect Data Format",
+        }
+    }
+
+    fn clarification(&self) -> Option<String> {
+        match self {
+            FaceError::WrongVertexNumber(f) => Some(format!("at {}", f.path())),
+            FaceError::OutOfRange(f, i) => Some(format!("at {}[{}]", f.path(), i)),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
