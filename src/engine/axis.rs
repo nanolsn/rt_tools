@@ -18,9 +18,9 @@ impl std::convert::TryFrom<char> for Axis {
     }
 }
 
-impl Into<char> for Axis {
-    fn into(self) -> char {
-        match self {
+impl From<Axis> for char {
+    fn from(f: Axis) -> Self {
+        match f {
             Axis::X => 'x',
             Axis::Y => 'y',
             Axis::Z => 'z',
