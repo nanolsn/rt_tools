@@ -1,3 +1,4 @@
+#[repr(C)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Vertex {
     pub pos: glm::Vec3,
